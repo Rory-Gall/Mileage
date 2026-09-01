@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mileage">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>KEI - Mileage</title>
+<style>
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --ink:#101418; --ink2:#4a5561; --ink3:#78848f;
+  --line:#d8dee5; --line2:#eaeef2;
+  --accent:#0b6b8a; --accent-ink:#ffffff;
+  --good:#1a7f45; --good-bg:#e4f4ea;
+  --warn:#a86a00; --warn-bg:#fdf0d9;
+  --bad:#b3261e; --bad-bg:#fbe6e4;
+  --shadow:0 1px 2px rgba(16,20,24,.07), 0 4px 14px rgba(16,20,24,.06);
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12161a; --panel:#1b2127; --ink:#eef2f5; --ink2:#b3bfc9; --ink3:#8494a1;
+    --line:#2e373f; --line2:#242b32;
+    --accent:#3aa8cc; --accent-ink:#08222b;
+    --good:#5fd493; --good-bg:#12321f;
+    --warn:#e8b25a; --warn-bg:#33260d;
+    --bad:#f2867d; --bad-bg:#391916;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+  padding:0 0 96px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 12px}
+
+header.top{
+  background:var(--panel); border-bottom:1px solid var(--line);
+  padding:10px 0; margin-bottom:12px; position:sticky; top:0; z-index:30;
+}
+header.top .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.2px;font-size:15px;white-space:nowrap}
+.brand span{color:var(--ink3);font-weight:500}
+.brand .build{
+  font-size:11px;font-weight:700;color:var(--accent);border:1px solid currentColor;
+  border-radius:999px;padding:1px 7px;margin-left:2px;letter-spacing:.02em
+}
+.pill{
+  margin-left:auto;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;
+  background:var(--line2);color:var(--ink3);white-space:nowrap
+}
+.pill.ok{background:var(--good-bg);color:var(--good)}
+.pill.dirty{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow); padding:14px; margin:0 0 12px;
+}
+.card h2{
+  font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);
+  margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px
+}
+.card h2 .n{
+  background:var(--accent);color:var(--accent-ink);border-radius:5px;
+  min-width:18px;height:18px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;letter-spacing:0
+}
+.card h2 .pill{font-size:11px}
+.card.live{border-color:var(--accent);border-width:2px}
+
+label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin:0 0 4px}
+input[type=text],input[type=date],select,textarea{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
+  background:var(--bg);color:var(--ink);font-size:16px;font-family:inherit;
+  font-variant-numeric:tabular-nums
+}
+textarea{min-height:64px;resize:vertical;line-height:1.5}
+select{appearance:none;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+input.warnf{border-color:var(--bad);background:var(--bad-bg)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+.odo{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:26px;font-weight:700;letter-spacing:.04em;padding:12px;text-align:center
+}
+
+.row{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 10px}
+.row>div{flex:1 1 130px;min-width:110px}
+.row:last-child{margin-bottom:0}
+.f{margin:0 0 12px}
+.f:last-child{margin-bottom:0}
+
+.withbtn{display:flex;gap:6px}
+.withbtn input{flex:1 1 auto;min-width:0}
+.btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:9px;padding:11px 13px;font-size:14px;font-weight:600;font-family:inherit;
+  cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent
+}
+.btn:active{transform:translateY(1px)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{width:100%;padding:16px;font-size:17px;border-radius:11px}
+.btn.sm{padding:8px 10px;font-size:13px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn.cam{padding:11px 14px;font-size:18px;line-height:1}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  border:1px solid var(--line);border-radius:999px;padding:9px 13px;
+  font-size:13px;font-weight:600;color:var(--ink2);background:var(--bg);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit
+}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.mini{padding:9px 11px;font-size:12px;font-weight:500;min-height:36px}
+.grouplab{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink3);margin:12px 0 6px}
+.grouplab:first-child{margin-top:0}
+
+.hint{font-size:12px;color:var(--ink3);margin:6px 0 0;line-height:1.4}
+.hint b{color:var(--ink2)}
+a.linkish{color:var(--accent);font-weight:600;text-decoration:none;cursor:pointer}
+
+.banner{
+  border-radius:var(--r);padding:12px 14px;margin:0 0 12px;font-size:14px;
+  border:1px solid; line-height:1.45
+}
+.banner.bad{background:var(--bad-bg);color:var(--bad);border-color:currentColor}
+.banner.warn{background:var(--warn-bg);color:var(--warn);border-color:currentColor}
+.banner.ok{background:var(--good-bg);color:var(--good);border-color:currentColor}
+.banner b{display:block;font-weight:700;margin-bottom:3px}
+.banner .btn{margin-top:9px;background:transparent;border-color:currentColor;color:inherit}
+
+.hidden{display:none !important}
+
+#updatePill{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:60;
+  background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;
+  padding:13px 20px;font-size:14px;font-weight:600;font-family:inherit;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer
+}
+#installBanner{display:flex;gap:10px;align-items:center;font-weight:500}
+#installBanner b{display:inline;font-weight:700;margin:0}
+#installBanner .btn{
+  flex:0 0 auto;border-color:currentColor;color:inherit;background:transparent;font-weight:700
+}
+
+.dist{
+  display:flex;align-items:baseline;gap:8px;justify-content:center;
+  background:var(--line2);border-radius:10px;padding:12px;margin:10px 0 0
+}
+.dist .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.dist .u{font-size:14px;font-weight:600;color:var(--ink3)}
+.dist.bad{background:var(--bad-bg)} .dist.bad .v{color:var(--bad)}
+
+.shot{margin:8px 0 0;display:flex;gap:8px;align-items:flex-start}
+.shot img{width:112px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.shot .meta{font-size:12px;color:var(--ink3);flex:1 1 auto}
+
+.trip{
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin:0 0 8px;
+  background:var(--bg)
+}
+.trip.open{border-color:var(--warn);background:var(--warn-bg)}
+.trip.sent{opacity:.62}
+.trip .l1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.trip .p{font-size:14px;font-weight:700;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip .k{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.trip .l2{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.4}
+.trip .l3{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:999px;background:var(--line2);color:var(--ink3)}
+.tag.open{background:var(--warn);color:#fff}
+.tag.sent{background:var(--good-bg);color:var(--good)}
+.daylab{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink3);margin:14px 0 6px;display:flex;gap:8px;align-items:baseline}
+.daylab:first-child{margin-top:0}
+.daylab .tot{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink2)}
+
+.sum{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 0}
+.sum th,.sum td{padding:7px 8px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:top}
+.sum th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
+.sum td.n,.sum th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sum tr:last-child td{border-bottom:0}
+.sum tfoot td{font-weight:800;border-top:2px solid var(--line)}
+
+.foot{color:var(--ink3);font-size:12px;text-align:center;margin:22px 0 0;line-height:1.6}
+
+dialog{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);
+  padding:16px;max-width:520px;width:calc(100% - 28px);box-shadow:var(--shadow)
+}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.stack{display:flex;gap:8px;flex-wrap:wrap}
+.stack>*{flex:1 1 130px}
+
+.recshots{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0}
+.recshots figure{margin:0;width:230px}
+.recshots img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}
+.recshots figcaption{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">KEI <span>/ Mileage</span> <span class="build" id="buildBadge">build 1</span></span>
+    <span class="pill" id="pill">Ready</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="banner warn hidden" id="installBanner">
+    <div id="installMsg" style="flex:1 1 auto"></div>
+    <button class="btn sm hidden" id="installBtn" type="button">Install</button>
+  </div>
+
+  <div id="banners"></div>
+
+  <div id="recCard" class="card hidden">
+    <h2>Mileage batch &mdash; sent from a phone</h2>
+    <div id="recMeta"></div>
+    <table class="sum" id="recTable"></table>
+    <div class="recshots" id="recShots"></div>
+    <p class="hint">This file lives in <b>_Shared Files to Sort (Keep this folder Clean)</b>.
+      At the computer, run the bat in <b>HTML to CSV Mileage Code</b> there &mdash; it files the
+      trips into the log and invoicing, then archives this file.</p>
+  </div>
+
+  <div id="openCard" class="card live hidden">
+    <h2><span class="n">&#9679;</span> Trip in progress</h2>
+    <div id="openHead"></div>
+
+    <div class="f" style="margin-top:12px">
+      <label for="oNotes">Sites / notes</label>
+      <textarea id="oNotes" placeholder="Where you went"></textarea>
+      <div class="chips" id="oSiteChips" style="margin-top:8px"></div>
+    </div>
+
+    <div class="f">
+      <label for="endKm" id="endKmLab">End odometer (km)</label>
+      <div class="withbtn">
+        <input type="text" id="endKm" class="odo" inputmode="decimal" placeholder="000000">
+        <button class="btn cam" id="endCamBtn" title="Photo of the odometer">&#128247;</button>
+      </div>
+      <input type="file" id="endCam" accept="image/*" class="hidden">
+      <div class="shot hidden" id="endShot"></div>
+    </div>
+
+    <div class="dist" id="oDist"><span class="v">&mdash;</span><span class="u">km</span></div>
+    <p class="hint" id="oDistHint"></p>
+
+    <div class="f" style="margin-top:12px">
+      <button class="btn pri big" id="endBtn">End trip</button>
+    </div>
+    <div class="stack" style="margin-top:8px">
+      <button class="btn sm" id="editOpenBtn">Edit trip details</button>
+      <button class="btn sm danger" id="binOpenBtn">Discard trip</button>
+    </div>
+  </div>
+
+  <div id="noStart" class="hidden">
+    <p class="hint">Finish the trip above before starting another &mdash; one open trip at a
+      time is what keeps an unclosed one from being buried.</p>
+  </div>
+
+  <div id="startCard" class="card">
+    <h2><span class="n">1</span> Start a trip</h2>
+
+    <div class="f">
+      <label>Client / project</label>
+      <div id="projChips"></div>
+      <p class="hint"><a class="linkish" id="oldToggle">Show older programs</a></p>
+    </div>
+
+    <div class="f">
+      <label>Vehicle</label>
+      <div class="chips" id="vehChips"></div>
+    </div>
+
+    <div class="f">
+      <label for="sNotes">Sites / notes</label>
+      <textarea id="sNotes" placeholder="e.g. Selous and Anderson"></textarea>
+      <div class="chips" id="sSiteChips" style="margin-top:8px"></div>
+    </div>
+
+    <div class="f">
+      <label for="startKm" id="startKmLab">Start odometer (km)</label>
+      <div class="withbtn">
+        <input type="text" id="startKm" class="odo" inputmode="decimal" placeholder="000000">
+        <button class="btn cam" id="startCamBtn" title="Photo of the odometer">&#128247;</button>
+      </div>
+      <input type="file" id="startCam" accept="image/*" class="hidden">
+      <div class="shot hidden" id="startShot"></div>
+      <p class="hint" id="lastKmHint"></p>
+    </div>
+
+    <div class="f">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600">
+        <input type="checkbox" id="distMode" style="width:auto;margin:0">
+        <span>No odometer &mdash; enter trip distance instead</span></label>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="sDate">Date</label>
+        <input type="date" id="sDate">
+      </div>
+    </div>
+
+    <button class="btn pri big" id="startBtn" style="margin-top:12px">Start trip</button>
+    <p class="hint">Saved on the phone the moment you press this. Come back and add the end
+      odometer when you get out of the truck.</p>
+  </div>
+
+  <div class="card" id="listCard">
+    <h2><span class="n">2</span> Trips on this phone <span class="pill" id="cnt"></span></h2>
+    <div id="list"></div>
+  </div>
+
+  <div class="card" id="sendCard">
+    <h2><span class="n">3</span> Send to the office</h2>
+    <div id="sendSummary"></div>
+    <div class="f" style="margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600">
+        <input type="checkbox" id="incPhotos" checked style="width:auto;margin:0">
+        <span>Include odometer photos</span></label>
+    </div>
+    <button class="btn pri big" id="sendBtn">Send unsent trips</button>
+    <div class="stack" style="margin-top:8px">
+      <button class="btn sm" id="csvBtn">Download CSV backup</button>
+      <button class="btn sm" id="sendAllBtn">Re-send everything</button>
+    </div>
+    <p class="hint" id="sendHint">Sends one file to the OneDrive app &mdash;
+      <b>KEI Shared &rsaquo; _Shared Files to Sort (Keep this folder Clean)</b> &mdash; same place as the field sheets.
+      If sharing is not offered it lands in Downloads and you can move it when you are back in signal.</p>
+  </div>
+
+  <div class="card" id="setCard">
+    <h2><span class="n">4</span> This phone</h2>
+    <div class="row">
+      <div>
+        <label for="driver">Driver</label>
+        <input type="text" id="driver" placeholder="Your name">
+      </div>
+    </div>
+    <p class="hint" id="storeHint"></p>
+    <div class="stack" style="margin-top:10px">
+      <button class="btn sm" id="purgeBtn">Delete sent trips</button>
+      <button class="btn sm danger" id="wipeBtn">Erase everything</button>
+    </div>
+  </div>
+
+  <p class="foot">
+    Kootenay Environmental Innovations<br>
+    Slow is Smooth, &amp; Smooth is Fast
+  </p>
+</div>
+
+<button id="updatePill" class="hidden" type="button">Updated &mdash; tap to reload</button>
+
+<dialog id="dlg">
+  <h3 style="margin:0 0 12px;font-size:15px" id="dlgTitle">Edit trip</h3>
+  <div id="dlgBody"></div>
+  <div class="stack" style="margin-top:14px">
+    <button class="btn" id="dlgCancel">Cancel</button>
+    <button class="btn pri" id="dlgOk">Save</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+var BAKED=null;/*BAKEDCFG*/
+
+/* ------------------------------------------------------------------ build
+   Bump BUILD and the filename together on every handover, so a phone can be
+   checked against the file it came from without opening a file browser. */
+var BUILD="2";
+
+/* ------------------------------------------------------------------ projects
+   These are the EXACT project strings from
+   _Profitability Dashboard\data\mileage_rates.json. They must stay exact:
+   the invoicing engine looks the rate up by string match, and a near-miss
+   ("LLC_GW (2026)" vs "LLC_GW (2026 Program)") silently prices at the default
+   rate. Add a project here when it is added to mileage_rates.json.
+   No dollar figure is calculated in this app on purpose - pricing belongs to
+   one engine (tools\calc.py), and a rate table baked into a phone goes stale
+   without anyone noticing. */
+var PROJECTS=[
+  {p:"LLC_SFM (2026 Program)",           g:"client"},
+  {p:"CoN_SFM (2026)",                   g:"client"},
+  {p:"CoN_IH Reporting (2026 Program)",  g:"client"},
+  {p:"LLC_GW (2026 Program)",            g:"client"},
+  {p:"SIFCo_SFM (2026)",                 g:"client"},
+  {p:"HPWPS_SFM (2026 Program)",         g:"client"},
+  {p:"RDKB_Topping & Beaver SFM (2025-26)", g:"client"},
+  {p:"SIFCo_Alba (2024-26)",             g:"client"},
+  {p:"Tesbo_SFM (2024-26)",              g:"client"},
+  {p:"CoC_GC Install",                   g:"client"},
+  {p:"000_KEI",                          g:"kei"},
+  {p:"000_Admin",                        g:"kei"},
+  {p:"000_Personal",                     g:"kei"},
+  {p:"000_House",                        g:"kei"},
+  {p:"000_Rental",                       g:"kei"},
+  {p:"CoN_SFM (2025)",                   g:"old"},
+  {p:"CoN_IH Reporting (2026)",          g:"old"},
+  {p:"HPWPS_SFM (2025 Program)",         g:"old"},
+  {p:"LLC_SFM (2025 Program)",           g:"old"}
+];
+
+/* Vehicles, exact strings from mileage_rates.json "vehicles". The dashboard
+   REFUSES a trip against an unknown vehicle rather than guessing its rate. */
+var VEHICLES=["RAV4","CRV","Crosstrek","Allie's Rav4","IBEX 450"];
+
+/* Monitoring sites, for the two-tap notes chips. Same list as the Field Sheet
+   app; it comes from the folder names in _KEI Monitoring Sites. */
+var SITES=["CoN_5-Mile at MOE","CoN_Anderson & Fell","CoN_Anderson Reservoir","CoN_Anderson at Elwyn",
+"CoN_Anderson at Gordon","CoN_Consumption","CoN_Cottonwood","CoN_MtnStn Resevoir",
+"CoN_Nelson CS Meteorological Data","CoN_Selous LB","CoN_Selous Reservoir","HPWPS_Harrop",
+"HPWPS_Narrows","HPWPS_Procter","HPWPS_Slater","LLC_Akokli at Bridge","LLC_Akokli at Pool",
+"LLC_Apex Lower","LLC_Apex Upper","LLC_Apex Wetland","LLC_Beaver Wetland","LLC_Beaver at Bubbles",
+"LLC_Beaver at Village","LLC_Blueberry at Columbia","LLC_Blueberry at Pulson","LLC_Bonanza",
+"LLC_Caribou Forest","LLC_Caribou Hwy","LLC_Dumont","LLC_Gray","LLC_Hanna","LLC_Kelly",
+"LLC_McDonald Forest","LLC_Slocan Lk at New Denver","LLC_Slocan Lk at Slocan","LLC_Summit Lk at Ck",
+"LLC_Topping","LLC_VOW-16","LLC_VOW-17","LLC_Wolverton Lower","SIFCo_Alba at Culvert",
+"SIFCo_Winlaw","Tsenbo_Ross"];
+
+/* Which sites to offer as chips for a given project prefix, so a CoN day does
+   not scroll past 30 LLC sites. Unmatched projects get the whole list. */
+function sitePrefix(proj){
+  var i=proj.indexOf("_");
+  if(i<0) return "";
+  var c=proj.slice(0,i);
+  if(c==="Tesbo") return "Tsenbo";
+  return c;
+}
+
+var STORE="kei-mileage-v1";
+var PHOTO_PREFIX="kei-mileage-photo-";
+var PHOTO_MAX_EDGE=1024;      /* an odometer only has to be legible, not printable */
+var PHOTO_QUALITY=0.6;
+var STORE_WARN=2500000;       /* shout well before the ~5 MB localStorage wall */
+
+var $=function(id){ return document.getElementById(id); };
+var RECORD=!!BAKED;           /* this file is a sent batch, not the working app */
+var S=null;
+var storageOK=true, storageErr="";
+var draft={proj:"", veh:"", photo:null};
+var endPhoto=null;
+var showOld=false;
+
+/* ---------------------------------------------------------------- utilities */
+function todayISO(){
+  var d=new Date(), p=function(n){ return (n<10?"0":"")+n; };
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function nowISO(){
+  var d=new Date(), p=function(n){ return (n<10?"0":"")+n; };
+  var off=-d.getTimezoneOffset(), s=off<0?"-":"+"; off=Math.abs(off);
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+
+         p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())+
+         s+p(Math.floor(off/60))+":"+p(off%60);
+}
+function esc(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function num(v){
+  if(v===null||v===undefined) return null;
+  var s=String(v).replace(/[,\s]/g,"");
+  if(s==="") return null;
+  if(!/^-?\d*\.?\d+$/.test(s)) return NaN;
+  return parseFloat(s);
+}
+function fmtKm(n){
+  if(n===null||n===undefined||isNaN(n)) return "-";
+  return (Math.round(n*10)/10).toLocaleString("en-CA",{maximumFractionDigits:1});
+}
+function dayName(iso){
+  var p=String(iso).split("-");
+  if(p.length!==3) return iso;
+  var d=new Date(+p[0],+p[1]-1,+p[2]);
+  var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var mons=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return days[d.getDay()]+" "+d.getDate()+" "+mons[d.getMonth()];
+}
+function daysAgo(iso){
+  var p=String(iso).split("-");
+  if(p.length!==3) return 0;
+  var a=new Date(+p[0],+p[1]-1,+p[2]);
+  var t=new Date(); t.setHours(0,0,0,0);
+  return Math.round((t-a)/86400000);
+}
+function pill(text,cls){
+  var el=$("pill");
+  el.textContent=text; el.className="pill"+(cls?" "+cls:"");
+}
+
+/* ---------------------------------------------------------------- storage
+   file:// origins can refuse localStorage outright, and a phone that silently
+   forgets a trip is worse than one that never took it. Probe at boot and shout
+   in a red banner rather than discovering it two weeks later. */
+function probeStorage(){
+  try{
+    var k="kei-mileage-probe";
+    localStorage.setItem(k,"1");
+    if(localStorage.getItem(k)!=="1") throw new Error("read back wrong");
+    localStorage.removeItem(k);
+    storageOK=true;
+  }catch(e){
+    storageOK=false;
+    storageErr=(e&&e.message)||String(e);
+  }
+  return storageOK;
+}
+function blank(){
+  return {v:1, driver:"", vehicle:"", trips:[], seq:0};
+}
+function load(){
+  if(!storageOK) return blank();
+  try{
+    var raw=localStorage.getItem(STORE);
+    if(!raw) return blank();
+    var s=JSON.parse(raw);
+    if(!s||!Array.isArray(s.trips)) return blank();
+    if(typeof s.seq!=="number") s.seq=s.trips.length;
+    return s;
+  }catch(e){ return blank(); }
+}
+var saveTimer=null;
+function save(now){
+  if(!storageOK){ pill("NOT SAVED","bad"); return false; }
+  clearTimeout(saveTimer);
+  if(!now){ pill("Saving...","dirty"); saveTimer=setTimeout(function(){ save(true); },400); return true; }
+  try{
+    localStorage.setItem(STORE,JSON.stringify(S));
+    pill("Saved","ok");
+    return true;
+  }catch(e){
+    pill("NOT SAVED","bad");
+    banner("bad","Nothing could be saved",
+      "The phone refused to store the trip log ("+esc((e&&e.name)||"error")+"). Free up space, "+
+      "or send what you have now before you lose it.");
+    return false;
+  }
+}
+function photoKey(id,which){ return PHOTO_PREFIX+id+"-"+which; }
+function putPhoto(id,which,dataURL){
+  if(!storageOK||!dataURL) return false;
+  try{ localStorage.setItem(photoKey(id,which),dataURL); return true; }
+  catch(e){
+    /* The trip itself is what matters. Keep it, lose the photo, say so out loud. */
+    alert("The photo could not be stored - the phone is out of space.\n\n"+
+          "The trip has been saved WITHOUT the photo. Send your trips to clear space.");
+    return false;
+  }
+}
+function getPhoto(id,which){
+  if(!storageOK) return null;
+  try{ return localStorage.getItem(photoKey(id,which)); }catch(e){ return null; }
+}
+function dropPhoto(id,which){
+  try{ localStorage.removeItem(photoKey(id,which)); }catch(e){}
+}
+function storageUsed(){
+  var n=0;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf("kei-mileage")===0) n+=(localStorage.getItem(k)||"").length+k.length;
+    }
+  }catch(e){ return null; }
+  return n;
+}
+
+/* ---------------------------------------------------------------- banners */
+var extraBanners=[];
+function banner(cls,title,body,action){
+  extraBanners.push({cls:cls,title:title,body:body,action:action});
+  drawBanners();
+}
+function drawBanners(){
+  var out=[];
+  if(!storageOK){
+    out.push('<div class="banner bad"><b>This phone will not remember anything</b>'+
+      'The browser refused to store data ('+esc(storageErr)+'). Trips typed here vanish when you '+
+      'close the page. Open the file from a normal browser tab rather than a preview window, or '+
+      'use another device - and tell Rory.</div>');
+  }
+  var open=S?S.trips.filter(function(t){ return t.end_km===null||t.end_km===undefined; }):[];
+  var stale=open.filter(function(t){ return daysAgo(t.date)>=1; });
+  if(stale.length){
+    var names=stale.map(function(t){
+      return dayName(t.date)+" - "+t.project+" ("+t.vehicle+")";
+    }).join("<br>");
+    out.push('<div class="banner bad"><b>'+stale.length+' trip'+(stale.length>1?"s have":" has")+
+      ' no end odometer</b>'+names+'<br><br>An open trip cannot be invoiced - the office refuses to '+
+      'bill a trip of unknown length. Read the odometer, or enter your best estimate and say so in '+
+      'the notes.</div>');
+  }else if(open.length){
+    out.push('<div class="banner warn"><b>Trip in progress</b>'+
+      open[0].project+' - started at '+fmtKm(open[0].start_km)+' km. '+
+      'Add the end odometer before you forget.</div>');
+  }
+  if(S&&!(S.driver||"").trim()){
+    out.push('<div class="banner warn"><b>Set your name once</b>'+
+      'Fill in <b>Driver</b> at the bottom of this page so the office knows whose vehicle '+
+      'the trips are in.</div>');
+  }
+  var used=storageUsed();
+  if(used!==null&&used>STORE_WARN){
+    out.push('<div class="banner warn"><b>This phone is nearly full</b>'+
+      'The mileage app is using '+Math.round(used/1024)+' KB and a phone usually allows about '+
+      '5 MB. Send your trips, then tap <b>Delete sent trips</b> at the bottom &mdash; otherwise '+
+      'the next odometer photo will not save.</div>');
+  }
+  for(var i=0;i<extraBanners.length;i++){
+    var b=extraBanners[i];
+    out.push('<div class="banner '+b.cls+'"><b>'+esc(b.title)+'</b>'+b.body+
+      '<br><button class="btn sm" data-dismiss="'+i+'">Dismiss</button></div>');
+  }
+  $("banners").innerHTML=out.join("");
+  Array.prototype.forEach.call($("banners").querySelectorAll("[data-dismiss]"),function(b){
+    b.onclick=function(){
+      extraBanners.splice(+b.getAttribute("data-dismiss"),1);
+      drawBanners();
+    };
+  });
+}
+
+/* ---------------------------------------------------------------- photos */
+function shrink(file,cb){
+  var reader=new FileReader();
+  reader.onerror=function(){ alert("That image could not be read."); cb(null); };
+  reader.onload=function(){
+    var img=new Image();
+    img.onerror=function(){ alert("That image could not be opened."); cb(null); };
+    img.onload=function(){
+      var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      if(!w||!h){ cb(null); return; }
+      var sc=Math.min(1,PHOTO_MAX_EDGE/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*sc)), ch=Math.max(1,Math.round(h*sc));
+      var c=document.createElement("canvas");
+      c.width=cw; c.height=ch;
+      c.getContext("2d").drawImage(img,0,0,cw,ch);
+      try{ cb(c.toDataURL("image/jpeg",PHOTO_QUALITY)); }
+      catch(e){ alert("That image could not be processed."); cb(null); }
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function showShot(el,dataURL,label,onClear){
+  if(!dataURL){ el.className="shot hidden"; el.innerHTML=""; return; }
+  el.className="shot";
+  el.innerHTML='<img alt="Odometer photo" src="'+dataURL+'">'+
+    '<div class="meta">'+esc(label)+'<br>'+Math.round(dataURL.length/1400)+' KB'+
+    '<br><button class="btn sm danger" style="margin-top:6px">Remove</button></div>';
+  el.querySelector("button").onclick=onClear;
+}
+
+/* ---------------------------------------------------------------- chips */
+function drawProjects(){
+  var host=$("projChips");
+  var groups=[["client","Client work"],["kei","KEI / non-billable"]];
+  if(showOld) groups.push(["old","Older programs"]);
+  var html="";
+  groups.forEach(function(g){
+    html+='<div class="grouplab">'+g[1]+'</div><div class="chips">';
+    PROJECTS.filter(function(p){ return p.g===g[0]; }).forEach(function(p){
+      html+='<button type="button" class="chip'+(draft.proj===p.p?" on":"")+
+            '" data-p="'+esc(p.p)+'">'+esc(p.p)+'</button>';
+    });
+    html+='</div>';
+  });
+  host.innerHTML=html;
+  Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
+    b.onclick=function(){
+      draft.proj=(draft.proj===b.getAttribute("data-p"))?"":b.getAttribute("data-p");
+      drawProjects(); drawSiteChips("sSiteChips","sNotes",draft.proj);
+    };
+  });
+  $("oldToggle").textContent=showOld?"Hide older programs":"Show older programs";
+}
+function drawVehicles(){
+  var host=$("vehChips");
+  host.innerHTML=VEHICLES.map(function(v){
+    return '<button type="button" class="chip'+(draft.veh===v?" on":"")+
+           '" data-v="'+esc(v)+'">'+esc(v)+'</button>';
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
+    b.onclick=function(){
+      draft.veh=b.getAttribute("data-v");
+      S.vehicle=draft.veh; save();
+      drawVehicles(); drawLastKm();
+    };
+  });
+}
+function drawSiteChips(hostId,taId,proj){
+  var host=$(hostId);
+  if(!host) return;
+  var pre=sitePrefix(proj||"");
+  var list=SITES.filter(function(s){ return !pre||s.indexOf(pre+"_")===0; });
+  if(!list.length) list=SITES;
+  host.innerHTML=list.map(function(s){
+    var short=s.indexOf("_")>=0?s.slice(s.indexOf("_")+1):s;
+    return '<button type="button" class="chip mini" data-s="'+esc(short)+'">'+esc(short)+'</button>';
+  }).join("");
+  Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
+    b.onclick=function(){
+      var ta=$(taId), s=b.getAttribute("data-s");
+      var cur=ta.value.trim();
+      ta.value=cur?(cur.replace(/[,\s]+$/,"")+", "+s):s;
+      ta.dispatchEvent(new Event("input"));
+    };
+  });
+}
+
+/* ---------------------------------------------------------------- start trip */
+function drawLastKm(){
+  var hint=$("lastKmHint");
+  var veh=draft.veh;
+  if(!veh){ hint.innerHTML="Pick a vehicle and the last reading logged for it shows up here."; return; }
+  var last=null;
+  for(var i=S.trips.length-1;i>=0;i--){
+    var t=S.trips[i];
+    if(t.vehicle===veh&&t.mode==="odo"&&t.end_km!==null&&t.end_km!==undefined){ last=t; break; }
+  }
+  if(!last){ hint.innerHTML="No previous reading for the <b>"+esc(veh)+"</b> on this phone."; return; }
+  hint.innerHTML='Last logged reading for the <b>'+esc(veh)+'</b> was <b>'+fmtKm(last.end_km)+
+    ' km</b> on '+dayName(last.date)+'. <a class="linkish" id="useLast">Use it</a> '+
+    '&mdash; but read the dash if the vehicle has been driven since.';
+  var a=$("useLast");
+  if(a) a.onclick=function(){ $("startKm").value=String(last.end_km); };
+}
+function applyDistMode(){
+  var on=$("distMode").checked;
+  $("startKmLab").textContent=on?"Trip distance (km)":"Start odometer (km)";
+  $("startKm").placeholder=on?"0":"000000";
+  $("lastKmHint").className=on?"hint hidden":"hint";
+  /* A distance entry is a finished trip the moment it is saved - there is no second
+     reading to come back for, so the button must not promise one. */
+  $("startBtn").textContent=on?"Log completed trip":"Start trip";
+}
+function startTrip(){
+  var mode=$("distMode").checked?"dist":"odo";
+  var kmv=num($("startKm").value);
+  var problems=[];
+  if(!draft.proj) problems.push("Pick the client or project this trip is for.");
+  if(!draft.veh)  problems.push("Pick the vehicle.");
+  if(mode==="odo"){
+    if(kmv===null) problems.push("Enter the start odometer reading, or photograph it and type what it says.");
+    else if(isNaN(kmv)) problems.push("The start odometer is not a number.");
+    else if(kmv<0) problems.push("An odometer reading cannot be negative.");
+  }
+  if(!$("sDate").value) problems.push("Set the date.");
+  if(problems.length){ alert(problems.join("\n\n")); return; }
+
+  S.seq=(S.seq||0)+1;
+  var id=$("sDate").value.replace(/-/g,"")+"-"+String(S.seq);
+  var t={
+    id:id,
+    date:$("sDate").value,
+    driver:(S.driver||"").trim(),
+    vehicle:draft.veh,
+    project:draft.proj,
+    notes:$("sNotes").value.trim(),
+    mode:mode,
+    start_km:(mode==="odo"?kmv:0),
+    end_km:(mode==="dist"?num($("startKm").value):null),
+    startedAt:nowISO(),
+    endedAt:null,
+    build:BUILD,
+    sent:false, sentAt:null,
+    hasStartPhoto:false, hasEndPhoto:false
+  };
+  /* Distance mode has no separate end reading: the number typed IS the distance,
+     stored as 0 -> N, which is exactly how the existing log records the CRV. */
+  if(mode==="dist"){
+    if(t.end_km===null||isNaN(t.end_km)||t.end_km<=0){
+      alert("Enter the trip distance in km."); S.seq--; return;
+    }
+    t.endedAt=t.startedAt;
+  }
+  if(draft.photo){ t.hasStartPhoto=putPhoto(t.id,"start",draft.photo); }
+
+  S.trips.push(t);
+  S.vehicle=draft.veh;
+  save(true);
+
+  draft.photo=null;
+  $("startKm").value=""; $("sNotes").value="";
+  $("distMode").checked=false; applyDistMode();
+  showShot($("startShot"),null);
+  render();
+  window.scrollTo(0,0);
+}
+
+/* ---------------------------------------------------------------- open trip */
+function openTrip(){
+  for(var i=0;i<S.trips.length;i++){
+    var t=S.trips[i];
+    if(t.end_km===null||t.end_km===undefined) return t;
+  }
+  return null;
+}
+function drawOpen(){
+  var t=openTrip();
+  if(!t){
+    $("openCard").className="card live hidden";
+    $("startCard").className="card";
+    $("noStart").className="hidden";
+    return;
+  }
+  /* Only one trip can be open at a time. That is the forcing function that stops an
+     unclosed trip piling up behind three new ones. */
+  $("openCard").className="card live";
+  $("startCard").className="card hidden";
+  $("noStart").className="card";
+
+  var started=t.startedAt?t.startedAt.slice(11,16):"";
+  $("openHead").innerHTML=
+    '<div style="font-size:17px;font-weight:800">'+esc(t.project)+'</div>'+
+    '<div class="hint" style="margin-top:4px">'+esc(t.vehicle)+
+      (t.driver?' &middot; '+esc(t.driver):'')+' &middot; '+dayName(t.date)+
+      (started?' &middot; started '+started:'')+'</div>'+
+    '<div class="hint" style="margin-top:6px">Start odometer <b>'+fmtKm(t.start_km)+' km</b>'+
+      (t.hasStartPhoto?' &middot; photo on file':' &middot; no photo')+'</div>';
+
+  $("oNotes").value=t.notes||"";
+  drawSiteChips("oSiteChips","oNotes",t.project);
+  var ep=getPhoto(t.id,"end");
+  endPhoto=ep;
+  showShot($("endShot"),ep,"End odometer",function(){
+    endPhoto=null; dropPhoto(t.id,"end"); showShot($("endShot"),null);
+  });
+  drawOpenDist();
+}
+function drawOpenDist(){
+  var t=openTrip(); if(!t) return;
+  var v=num($("endKm").value);
+  var box=$("oDist"), hint=$("oDistHint");
+  if(v===null||isNaN(v)){
+    box.className="dist"; box.querySelector(".v").innerHTML="&mdash;";
+    hint.textContent="Read the odometer when you park.";
+    return;
+  }
+  var d=v-t.start_km;
+  if(d<0){
+    box.className="dist bad"; box.querySelector(".v").textContent=fmtKm(d);
+    hint.textContent="The end reading is lower than the start ("+fmtKm(t.start_km)+
+      " km). A trip cannot run the odometer backwards - check which reading is which.";
+  }else if(d===0){
+    box.className="dist bad"; box.querySelector(".v").textContent="0";
+    hint.textContent="Start and end are identical, so the trip is 0 km. The office refuses a "+
+      "0 km trip - enter the real end-of-trip reading.";
+  }else{
+    box.className="dist"; box.querySelector(".v").textContent=fmtKm(d);
+    hint.textContent=(d>2000?"That is an unusually long single trip - check the readings.":
+      "From "+fmtKm(t.start_km)+" km to "+fmtKm(v)+" km.");
+  }
+}
+function endTrip(){
+  var t=openTrip(); if(!t) return;
+  var v=num($("endKm").value);
+  if(v===null){ alert("Enter the end odometer reading."); return; }
+  if(isNaN(v)){ alert("The end odometer is not a number."); return; }
+  if(v<0){ alert("An odometer reading cannot be negative."); return; }
+  if(v<t.start_km){
+    alert("The end reading ("+fmtKm(v)+" km) is lower than the start ("+fmtKm(t.start_km)+
+          " km).\n\nA trip cannot run the odometer backwards - check which reading is which.");
+    return;
+  }
+  if(v===t.start_km){
+    alert("Start and end are identical, so the trip is 0 km.\n\n"+
+          "Enter the real end-of-trip odometer reading.");
+    return;
+  }
+  if(v-t.start_km>2000&&!confirm(fmtKm(v-t.start_km)+" km in a single trip is unusually long.\n\n"+
+      "Save it anyway?")) return;
+
+  t.notes=$("oNotes").value.trim();
+  t.end_km=v;
+  t.endedAt=nowISO();
+  if(endPhoto){ t.hasEndPhoto=putPhoto(t.id,"end",endPhoto); }
+  endPhoto=null;
+  $("endKm").value="";
+  showShot($("endShot"),null);
+  save(true);
+  render();
+  window.scrollTo(0,0);
+}
+
+/* ---------------------------------------------------------------- list */
+function tripKm(t){
+  if(t.end_km===null||t.end_km===undefined) return null;
+  return t.end_km-t.start_km;
+}
+function drawList(){
+  var host=$("list");
+  if(!S.trips.length){
+    host.innerHTML='<p class="hint">No trips yet.</p>';
+    $("cnt").textContent="0";
+    return;
+  }
+  $("cnt").textContent=S.trips.length+" trip"+(S.trips.length>1?"s":"");
+
+  var byDay={}, days=[];
+  S.trips.forEach(function(t){
+    if(!byDay[t.date]){ byDay[t.date]=[]; days.push(t.date); }
+    byDay[t.date].push(t);
+  });
+  days.sort().reverse();
+
+  var html="";
+  days.forEach(function(d){
+    var tot=byDay[d].reduce(function(a,t){ var k=tripKm(t); return a+(k||0); },0);
+    var opn=byDay[d].filter(function(t){ return tripKm(t)===null; }).length;
+    var lab=(tot?fmtKm(tot)+" km":"")+
+            (opn?(tot?" &middot; ":"")+opn+" open":"");
+    html+='<div class="daylab">'+esc(dayName(d))+'<span class="tot">'+lab+'</span></div>';
+    byDay[d].forEach(function(t){
+      var k=tripKm(t);
+      var cls="trip"+(k===null?" open":"")+(t.sent?" sent":"");
+      html+='<div class="'+cls+'" data-id="'+esc(t.id)+'">'+
+        '<div class="l1"><span class="p">'+esc(t.project||"(no project)")+'</span>'+
+        '<span class="k">'+(k===null?"open":fmtKm(k)+" km")+'</span></div>'+
+        '<div class="l2">'+esc(t.vehicle)+
+          (t.mode==="dist"?" &middot; distance entered":
+            " &middot; "+fmtKm(t.start_km)+(k===null?" &rarr; ?":" &rarr; "+fmtKm(t.end_km)))+
+          (t.notes?"<br>"+esc(t.notes):"")+'</div>'+
+        '<div class="l3">'+
+          (k===null?'<span class="tag open">Open</span>':"")+
+          (t.sent?'<span class="tag sent">Sent</span>':'<span class="tag">Not sent</span>')+
+          (t.hasStartPhoto||t.hasEndPhoto?'<span class="tag">&#128247; '+
+            ((t.hasStartPhoto?1:0)+(t.hasEndPhoto?1:0))+'</span>':"")+
+          '<button class="btn sm" data-act="edit" style="margin-left:auto">Edit</button>'+
+          '<button class="btn sm danger" data-act="del">Delete</button>'+
+        '</div></div>';
+    });
+  });
+  host.innerHTML=html;
+  Array.prototype.forEach.call(host.querySelectorAll("button[data-act]"),function(b){
+    b.onclick=function(){
+      var id=b.parentNode.parentNode.getAttribute("data-id");
+      if(b.getAttribute("data-act")==="edit") editTrip(id); else delTrip(id);
+    };
+  });
+}
+function findTrip(id){
+  for(var i=0;i<S.trips.length;i++) if(S.trips[i].id===id) return S.trips[i];
+  return null;
+}
+function delTrip(id){
+  var t=findTrip(id); if(!t) return;
+  if(!confirm("Delete this trip?\n\n"+t.date+" - "+t.project+"\n"+
+      (tripKm(t)===null?"open":fmtKm(tripKm(t))+" km")+
+      (t.sent?"\n\nIt has already been sent to the office, so deleting it here does not "+
+              "remove it there.":"\n\nIt has NOT been sent. This cannot be undone."))) return;
+  dropPhoto(id,"start"); dropPhoto(id,"end");
+  S.trips=S.trips.filter(function(x){ return x.id!==id; });
+  save(true); render();
+}
+
+/* ---------------------------------------------------------------- edit dialog */
+function editTrip(id){
+  var t=findTrip(id); if(!t) return;
+  var dlg=$("dlg");
+  $("dlgTitle").textContent="Edit trip - "+dayName(t.date);
+  var opts=PROJECTS.map(function(p){
+    return '<option value="'+esc(p.p)+'"'+(p.p===t.project?" selected":"")+'>'+esc(p.p)+'</option>';
+  }).join("");
+  var vopts=VEHICLES.map(function(v){
+    return '<option value="'+esc(v)+'"'+(v===t.vehicle?" selected":"")+'>'+esc(v)+'</option>';
+  }).join("");
+  $("dlgBody").innerHTML=
+    '<div class="f"><label>Date</label><input type="date" id="eDate" value="'+esc(t.date)+'"></div>'+
+    '<div class="f"><label>Client / project</label><select id="eProj">'+opts+'</select></div>'+
+    '<div class="f"><label>Vehicle</label><select id="eVeh">'+vopts+'</select></div>'+
+    '<div class="f"><label>Sites / notes</label><textarea id="eNotes">'+esc(t.notes||"")+'</textarea></div>'+
+    '<div class="row"><div><label>'+(t.mode==="dist"?"Start (0)":"Start odometer")+'</label>'+
+      '<input type="text" id="eStart" inputmode="decimal" value="'+esc(t.start_km)+'"></div>'+
+      '<div><label>'+(t.mode==="dist"?"Distance (km)":"End odometer")+'</label>'+
+      '<input type="text" id="eEnd" inputmode="decimal" value="'+
+        esc(t.end_km===null||t.end_km===undefined?"":t.end_km)+'"></div></div>'+
+    '<p class="hint">Leave the end blank to put the trip back in progress. Clearing a reading '+
+      'never saves it as zero.</p>';
+  dlg.returnValue="";
+  $("dlgOk").onclick=function(){
+    var st=num($("eStart").value), en=num($("eEnd").value);
+    if(st===null||isNaN(st)||st<0){
+      alert("The start reading has to be a number of km, not blank. Nothing is saved as zero.");
+      return;
+    }
+    if(en!==null){
+      if(isNaN(en)||en<0){ alert("The end reading has to be a number of km."); return; }
+      if(en<st){ alert("The end reading is lower than the start. A trip cannot run the "+
+                       "odometer backwards."); return; }
+      if(en===st){ alert("Start and end are identical, so the trip is 0 km. The office "+
+                         "refuses a 0 km trip."); return; }
+    }
+    if(!$("eDate").value){ alert("Set the date."); return; }
+    t.date=$("eDate").value;
+    t.project=$("eProj").value;
+    t.vehicle=$("eVeh").value;
+    t.notes=$("eNotes").value.trim();
+    t.start_km=st;
+    t.end_km=en;
+    if(en===null) t.endedAt=null;
+    else if(!t.endedAt) t.endedAt=nowISO();
+    if(t.sent){
+      t.sent=false; t.sentAt=null;
+      banner("warn","Edited after sending",
+        "This trip was marked unsent again so the correction reaches the office. Send your trips.");
+    }
+    save(true); dlg.close(); render();
+  };
+  $("dlgCancel").onclick=function(){ dlg.close(); };
+  if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
+}
+
+/* ---------------------------------------------------------------- send */
+function unsent(){ return S.trips.filter(function(t){ return !t.sent; }); }
+function sendable(list){
+  return list.filter(function(t){ return t.end_km!==null&&t.end_km!==undefined; });
+}
+function drawSend(){
+  var u=unsent(), ready=sendable(u), open=u.length-ready.length;
+  var byProj={}, order=[];
+  ready.forEach(function(t){
+    if(!byProj[t.project]){ byProj[t.project]={km:0,n:0}; order.push(t.project); }
+    byProj[t.project].km+=tripKm(t); byProj[t.project].n++;
+  });
+  var rows=order.sort().map(function(p){
+    return '<tr><td>'+esc(p)+'</td><td class="n">'+byProj[p].n+'</td>'+
+           '<td class="n">'+fmtKm(byProj[p].km)+'</td></tr>';
+  }).join("");
+  var tot=ready.reduce(function(a,t){ return a+tripKm(t); },0);
+  var html;
+  if(!ready.length){
+    html='<p class="hint">Nothing to send'+(open?" - "+open+" open trip"+(open>1?"s":"")+
+      " still need an end odometer.":".")+'</p>';
+  }else{
+    html='<table class="sum"><thead><tr><th>Client / project</th><th class="n">Trips</th>'+
+      '<th class="n">km</th></tr></thead><tbody>'+rows+'</tbody>'+
+      '<tfoot><tr><td>Total</td><td class="n">'+ready.length+'</td>'+
+      '<td class="n">'+fmtKm(tot)+'</td></tr></tfoot></table>';
+    if(open) html+='<p class="hint"><b>'+open+' open trip'+(open>1?"s are":" is")+
+      ' held back</b> - a trip with no end odometer would be billed as 0 km, so it is not sent.</p>';
+  }
+  $("sendSummary").innerHTML=html;
+  $("sendBtn").disabled=!ready.length;
+  $("sendBtn").textContent=ready.length?("Send "+ready.length+" trip"+(ready.length>1?"s":"")):
+    "Nothing to send";
+}
+function batchPayload(list,withPhotos){
+  return {
+    kind:"kei-mileage-batch",
+    version:1,
+    build:BUILD,
+    driver:(S.driver||"").trim(),
+    device:(navigator.userAgent||"").slice(0,160),
+    createdAt:nowISO(),
+    /* trips carry exactly the fields POST /api/mileage accepts, plus provenance
+       the office side keeps but the dashboard ignores. */
+    trips:list.map(function(t){
+      var o={
+        date:t.date,
+        vehicle:t.vehicle,
+        project:t.project,
+        notes:t.notes||"",
+        start_km:t.start_km,
+        end_km:t.end_km,
+        paid_out:false,
+        _id:t.id,
+        _driver:t.driver||(S.driver||"").trim(),
+        _mode:t.mode,
+        _startedAt:t.startedAt||null,
+        _endedAt:t.endedAt||null,
+        _build:t.build||BUILD
+      };
+      if(withPhotos){
+        var a=t.hasStartPhoto?getPhoto(t.id,"start"):null;
+        var b=t.hasEndPhoto?getPhoto(t.id,"end"):null;
+        if(a) o._photoStart=a;
+        if(b) o._photoEnd=b;
+      }
+      return o;
+    })
+  };
+}
+function csvOf(list){
+  var head=["Date","Driver","Vehicle","Project","Notes","Start (km)","End (km)","Dist (km)",
+            "Paid Out","Year-Month","Trip ID","Started","Ended","Entry Mode","App Build"];
+  function q(v){
+    var s=(v===null||v===undefined)?"":String(v);
+    return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }
+  var lines=[head.map(q).join(",")];
+  list.forEach(function(t){
+    lines.push([t.date,t.driver||S.driver||"",t.vehicle,t.project,t.notes||"",
+      t.start_km,t.end_km,tripKm(t),"No",String(t.date).slice(0,7),t.id,
+      t.startedAt||"",t.endedAt||"",t.mode,t.build||BUILD].map(q).join(","));
+  });
+  /* BOM so Excel opens site names with accents correctly. CRLF for the same reason. */
+  return "\uFEFF"+lines.join("\r\n")+"\r\n";
+}
+function recordHTML(payload){
+  var clone=document.documentElement.cloneNode(true);
+  function pick(sel){ return clone.querySelector(sel); }
+  ["#openCard","#startCard","#noStart","#listCard","#sendCard","#setCard","#banners","#dlg",
+   "#installBanner","#updatePill"].forEach(function(s){
+    var el=pick(s); if(el) el.parentNode.removeChild(el);
+  });
+  var rec=pick("#recCard"); if(rec) rec.className="card";
+  var t=pick("title");
+  if(t) t.textContent="KEI Mileage - "+payload.driver+" "+payload.createdAt.slice(0,10);
+  var html="<!doctype html>\n"+clone.outerHTML;
+  var json=JSON.stringify(payload).replace(/<\//g,"<\\/");
+  var re=/var BAKED=[^\n]*?;\/\*BAKEDCFG\*\//;
+  if(!re.test(html)) return null;
+  return html.replace(re,function(){ return "var BAKED="+json+";/*"+"BAKEDCFG"+"*/"; });
+}
+function fileStem(payload){
+  var who=(payload.driver||"Unknown").replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g,"");
+  return payload.createdAt.slice(0,10)+"_Mileage_"+(who||"Unknown");
+}
+function deliver(blob,name,thenOK){
+  if(navigator.canShare){
+    try{
+      var file=new File([blob],name,{type:blob.type});
+      if(navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:name})
+          .then(function(){ thenOK("Sent"); })
+          .catch(function(){ download(blob,name); thenOK("Saved to device"); });
+        return;
+      }
+    }catch(e){}
+  }
+  download(blob,name);
+  thenOK("Saved to device");
+}
+function download(blob,name){
+  var a=document.createElement("a");
+  var url=URL.createObjectURL(blob);
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); },4000);
+}
+function doSend(all){
+  var list=sendable(all?S.trips:unsent());
+  if(!list.length){ alert("There is nothing to send."); return; }
+  var withPhotos=$("incPhotos").checked;
+  var payload=batchPayload(list,withPhotos);
+  var html=recordHTML(payload);
+  if(!html){
+    alert("The file could not be prepared - this page has been altered. Use the CSV backup "+
+          "instead and tell Rory.");
+    return;
+  }
+  var name=fileStem(payload)+".html";
+  var blob=new Blob([html],{type:"text/html"});
+  var ids={};
+  list.forEach(function(t){ ids[t.id]=1; });
+  deliver(blob,name,function(how){
+    var stamp=nowISO();
+    S.trips.forEach(function(t){
+      if(ids[t.id]){ t.sent=true; t.sentAt=stamp; }
+    });
+    save(true);
+    pill(how,"ok");
+    banner("ok",how+" - "+list.length+" trip"+(list.length>1?"s":""),
+      "Put <b>"+esc(name)+"</b> into OneDrive &rsaquo; KEI Shared &rsaquo; _Shared Files to Sort "+
+      "(Keep this folder Clean) &mdash; same place as the field sheets. Photos stay on this "+
+      "phone until you tap <b>Delete sent trips</b>.");
+    render();
+  });
+}
+function doCSV(){
+  var list=S.trips.slice();
+  if(!list.length){ alert("There are no trips to export."); return; }
+  var name=todayISO()+"_Mileage_"+((S.driver||"Unknown").replace(/\s+/g,""))+".csv";
+  deliver(new Blob([csvOf(list)],{type:"text/csv;charset=utf-8"}),name,function(how){
+    pill("CSV "+how.toLowerCase(),"ok");
+  });
+}
+
+/* ---------------------------------------------------------------- housekeeping */
+function purgeSent(){
+  var sent=S.trips.filter(function(t){ return t.sent; });
+  if(!sent.length){ alert("There are no sent trips to delete."); return; }
+  if(!confirm("Delete "+sent.length+" sent trip"+(sent.length>1?"s":"")+
+      (sent.length>1?" and their photos":" and its photos")+" from this phone?"+
+      "\n\nThey stay in the office copy you already sent.")) return;
+  sent.forEach(function(t){ dropPhoto(t.id,"start"); dropPhoto(t.id,"end"); });
+  S.trips=S.trips.filter(function(t){ return !t.sent; });
+  save(true); render();
+}
+function wipe(){
+  var u=sendable(unsent()).length;
+  if(!confirm("Erase every trip and photo on this phone?"+
+      (u?"\n\n"+u+" trip"+(u>1?"s have":" has")+" NOT been sent to the office and will be lost.":"")+
+      "\n\nThis cannot be undone.")) return;
+  if(u&&!confirm("Really erase "+u+" unsent trip"+(u>1?"s":"")+"?")) return;
+  try{
+    var kill=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.indexOf("kei-mileage")===0) kill.push(k);
+    }
+    kill.forEach(function(k){ localStorage.removeItem(k); });
+  }catch(e){}
+  S=blank(); save(true); extraBanners=[]; render();
+}
+function drawStorage(){
+  var n=storageUsed();
+  var photos=S.trips.reduce(function(a,t){ return a+(t.hasStartPhoto?1:0)+(t.hasEndPhoto?1:0); },0);
+  $("storeHint").innerHTML=
+    (n===null?"Storage use could not be measured.":
+      "Using <b>"+Math.round(n/1024)+" KB</b> on this phone across "+S.trips.length+
+      " trip"+(S.trips.length===1?"":"s")+" and "+photos+" photo"+(photos===1?"":"s")+".")+
+    " A phone typically allows about 5 MB, so send and clear regularly."+
+    " App build "+BUILD+".";
+}
+
+/* ---------------------------------------------------------------- record view */
+function drawRecord(){
+  /* recordHTML() strips these cards out, so a re-opened batch file has none of them. */
+  ["openCard","startCard","noStart","listCard","sendCard","setCard",
+   "installBanner","updatePill"].forEach(function(id){
+    var el=$(id); if(el) el.className="hidden";
+  });
+  $("recCard").className="card";
+  var p=BAKED;
+  var tot=p.trips.reduce(function(a,t){ return a+(t.end_km-t.start_km); },0);
+  $("recMeta").innerHTML=
+    '<div style="font-size:17px;font-weight:800">'+esc(p.driver||"(no driver set)")+'</div>'+
+    '<div class="hint" style="margin-top:4px">'+p.trips.length+' trip'+
+      (p.trips.length===1?"":"s")+' &middot; '+fmtKm(tot)+' km &middot; sent '+
+      esc(p.createdAt.slice(0,16).replace("T"," "))+' &middot; app build '+esc(p.build)+'</div>';
+  var rows=p.trips.map(function(t){
+    return '<tr><td class="n">'+esc(t.date)+'</td><td>'+esc(t.project)+'</td>'+
+      '<td>'+esc(t.vehicle)+'</td><td>'+esc(t.notes||"")+'</td>'+
+      '<td class="n">'+fmtKm(t.start_km)+'</td><td class="n">'+fmtKm(t.end_km)+'</td>'+
+      '<td class="n">'+fmtKm(t.end_km-t.start_km)+'</td></tr>';
+  }).join("");
+  $("recTable").innerHTML=
+    '<thead><tr><th class="n">Date</th><th>Project</th><th>Vehicle</th><th>Notes</th>'+
+    '<th class="n">Start</th><th class="n">End</th><th class="n">km</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td colspan="6">Total</td><td class="n">'+fmtKm(tot)+'</td></tr></tfoot>';
+  var shots="";
+  p.trips.forEach(function(t){
+    [["_photoStart","start"],["_photoEnd","end"]].forEach(function(pair){
+      if(!t[pair[0]]) return;
+      /* A distance entry has no start reading - the photo is of a trip meter showing
+         the whole trip, so labelling it "start - 0 km" would be nonsense. */
+      var cap=(t._mode==="dist")
+        ? "trip meter &middot; "+fmtKm(t.end_km-t.start_km)+" km"
+        : pair[1]+" &middot; "+fmtKm(pair[1]==="start"?t.start_km:t.end_km)+" km";
+      shots+='<figure><img alt="Odometer" src="'+t[pair[0]]+'">'+
+        '<figcaption>'+esc(t.date)+' &middot; '+esc(t.project)+'<br>'+cap+'</figcaption></figure>';
+    });
+  });
+  $("recShots").innerHTML=shots||'<p class="hint">No odometer photos in this batch.</p>';
+  pill("Record","ok");
+}
+
+/* ---------- installable app layer ----------
+   Copied from the Field Sheet app (build 13). Only on the hosted origin (or
+   localhost while testing). A sent batch opened as a record, and a copy opened
+   from file://, skip this entirely - the file stays plain self-contained HTML
+   everywhere it always worked. */
+var HOSTED=location.protocol==="https:"||location.hostname==="localhost"||location.hostname==="127.0.0.1";
+var STANDALONE=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+var IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+var deferredInstall=null;
+
+function showInstallUI(){
+  if(STANDALONE) return;
+  var b=$("installBanner"); if(!b) return;
+  $("installMsg").innerHTML=IOS
+    ? "Install before logging trips: tap <b>Share</b>, then <b>Add to Home Screen</b>. Trips typed in this tab will NOT follow into the installed app &mdash; <b>Send</b> any trips here first."
+    : "Install this on the phone so it opens from an icon and works with no signal.";
+  $("installBtn").classList.toggle("hidden",IOS||!deferredInstall);
+  b.classList.remove("hidden");
+}
+function setupApp(){
+  if(!HOSTED||RECORD) return;
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      /* a NEW worker reaching "activated" while an OLD one was already active
+         is the one true signal of an update - survives hard reloads, where
+         navigator.serviceWorker.controller is null despite an active worker */
+      function offerWhenActivated(w){
+        if(!w) return;
+        w.addEventListener("statechange",function(){
+          if(w.state==="activated") $("updatePill").classList.remove("hidden");
+        });
+      }
+      if(reg.waiting&&reg.active) $("updatePill").classList.remove("hidden");
+      reg.addEventListener("updatefound",function(){
+        if(reg.active) offerWhenActivated(reg.installing);
+      });
+    }).catch(function(){});
+  }
+  /* the trip log must survive the OS cleaning house - installed apps are
+     usually granted this automatically, but ask rather than assume */
+  if(navigator.storage&&navigator.storage.persist){
+    navigator.storage.persist().catch(function(){});
+  }
+  window.addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault();
+    deferredInstall=e;
+    showInstallUI();
+  });
+  window.addEventListener("appinstalled",function(){
+    deferredInstall=null;
+    $("installBanner").classList.add("hidden");
+  });
+  $("installBtn").addEventListener("click",function(){
+    if(deferredInstall){ deferredInstall.prompt(); deferredInstall=null; $("installBtn").classList.add("hidden"); }
+  });
+  $("updatePill").addEventListener("click",function(){
+    save(true);
+    location.reload();
+  });
+  if(IOS) showInstallUI();
+}
+
+/* ---------------------------------------------------------------- render/boot */
+function render(){
+  drawBanners();
+  drawOpen();
+  drawProjects();
+  drawVehicles();
+  drawSiteChips("sSiteChips","sNotes",draft.proj);
+  drawLastKm();
+  drawList();
+  drawSend();
+  drawStorage();
+}
+function init(){
+  $("buildBadge").textContent="build "+BUILD;
+
+  if(RECORD){ drawRecord(); return; }
+
+  probeStorage();
+  S=load();
+  draft.veh=S.vehicle||"";
+  $("driver").value=S.driver||"";
+  $("sDate").value=todayISO();
+
+  $("oldToggle").onclick=function(){ showOld=!showOld; drawProjects(); };
+  $("distMode").onchange=applyDistMode;
+  $("startBtn").onclick=startTrip;
+  $("endBtn").onclick=endTrip;
+  $("endKm").oninput=drawOpenDist;
+  $("oNotes").oninput=function(){
+    var t=openTrip(); if(!t) return;
+    t.notes=$("oNotes").value; save();
+  };
+  $("editOpenBtn").onclick=function(){ var t=openTrip(); if(t) editTrip(t.id); };
+  $("binOpenBtn").onclick=function(){ var t=openTrip(); if(t) delTrip(t.id); };
+  $("sendBtn").onclick=function(){ doSend(false); };
+  $("sendAllBtn").onclick=function(){
+    if(confirm("Send every trip on this phone again, including ones already sent?\n\n"+
+       "The office side ignores a trip it already has, so this is safe.")) doSend(true);
+  };
+  $("csvBtn").onclick=doCSV;
+  $("purgeBtn").onclick=purgeSent;
+  $("wipeBtn").onclick=wipe;
+  $("driver").oninput=function(){ S.driver=$("driver").value; save(); drawBanners(); };
+
+  $("startCamBtn").onclick=function(){ $("startCam").click(); };
+  $("startCam").onchange=function(){
+    var f=this.files&&this.files[0]; this.value="";
+    if(!f) return;
+    pill("Reading photo...","dirty");
+    shrink(f,function(d){
+      draft.photo=d;
+      showShot($("startShot"),d,"Start odometer",function(){
+        draft.photo=null; showShot($("startShot"),null);
+      });
+      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
+    });
+  };
+  $("endCamBtn").onclick=function(){ $("endCam").click(); };
+  $("endCam").onchange=function(){
+    var f=this.files&&this.files[0]; this.value="";
+    if(!f) return;
+    pill("Reading photo...","dirty");
+    shrink(f,function(d){
+      endPhoto=d;
+      showShot($("endShot"),d,"End odometer",function(){
+        endPhoto=null; showShot($("endShot"),null);
+      });
+      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
+    });
+  };
+
+  applyDistMode();
+  render();
+  setupApp();
+
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
+else init();
+</script>
+</body>
+</html>
