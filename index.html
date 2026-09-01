@@ -124,7 +124,7 @@ input.warnf{border-color:var(--bad);background:var(--bad-bg)}
   cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit
 }
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.chip.mini{padding:9px 11px;font-size:12px;font-weight:500;min-height:36px}
+.chip.ghost{color:var(--accent);border-style:dashed}
 .grouplab{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink3);margin:12px 0 6px}
 .grouplab:first-child{margin-top:0}
@@ -248,7 +248,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="f" style="margin-top:12px">
       <label for="oNotes">Sites / notes</label>
       <textarea id="oNotes" placeholder="Where you went"></textarea>
-      <div class="chips" id="oSiteChips" style="margin-top:8px"></div>
     </div>
 
     <div class="f">
@@ -284,7 +283,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="f">
       <label>Client / project</label>
       <div id="projChips"></div>
-      <p class="hint"><a class="linkish" id="oldToggle">Show older programs</a></p>
+      <p class="hint" id="oldHint"><a class="linkish" id="oldToggle">Show older programs</a></p>
     </div>
 
     <div class="f">
@@ -295,7 +294,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="f">
       <label for="sNotes">Sites / notes</label>
       <textarea id="sNotes" placeholder="e.g. Selous and Anderson"></textarea>
-      <div class="chips" id="sSiteChips" style="margin-top:8px"></div>
     </div>
 
     <div class="f">
@@ -389,7 +387,7 @@ var BAKED=null;/*BAKEDCFG*/
 /* ------------------------------------------------------------------ build
    Bump BUILD and the filename together on every handover, so a phone can be
    checked against the file it came from without opening a file browser. */
-var BUILD="2";
+var BUILD="3";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -426,28 +424,9 @@ var PROJECTS=[
    REFUSES a trip against an unknown vehicle rather than guessing its rate. */
 var VEHICLES=["RAV4","CRV","Crosstrek","Allie's Rav4","IBEX 450"];
 
-/* Monitoring sites, for the two-tap notes chips. Same list as the Field Sheet
-   app; it comes from the folder names in _KEI Monitoring Sites. */
-var SITES=["CoN_5-Mile at MOE","CoN_Anderson & Fell","CoN_Anderson Reservoir","CoN_Anderson at Elwyn",
-"CoN_Anderson at Gordon","CoN_Consumption","CoN_Cottonwood","CoN_MtnStn Resevoir",
-"CoN_Nelson CS Meteorological Data","CoN_Selous LB","CoN_Selous Reservoir","HPWPS_Harrop",
-"HPWPS_Narrows","HPWPS_Procter","HPWPS_Slater","LLC_Akokli at Bridge","LLC_Akokli at Pool",
-"LLC_Apex Lower","LLC_Apex Upper","LLC_Apex Wetland","LLC_Beaver Wetland","LLC_Beaver at Bubbles",
-"LLC_Beaver at Village","LLC_Blueberry at Columbia","LLC_Blueberry at Pulson","LLC_Bonanza",
-"LLC_Caribou Forest","LLC_Caribou Hwy","LLC_Dumont","LLC_Gray","LLC_Hanna","LLC_Kelly",
-"LLC_McDonald Forest","LLC_Slocan Lk at New Denver","LLC_Slocan Lk at Slocan","LLC_Summit Lk at Ck",
-"LLC_Topping","LLC_VOW-16","LLC_VOW-17","LLC_Wolverton Lower","SIFCo_Alba at Culvert",
-"SIFCo_Winlaw","Tsenbo_Ross"];
-
-/* Which sites to offer as chips for a given project prefix, so a CoN day does
-   not scroll past 30 LLC sites. Unmatched projects get the whole list. */
-function sitePrefix(proj){
-  var i=proj.indexOf("_");
-  if(i<0) return "";
-  var c=proj.slice(0,i);
-  if(c==="Tesbo") return "Tsenbo";
-  return c;
-}
+/* Site chips were removed on Rory's request (2026-09-01, build 3) - notes are
+   free text only. If they ever come back, builds 1-2 in _Superseded and git
+   history carry the SITES list, sitePrefix() and drawSiteChips(). */
 
 var STORE="kei-mileage-v1";
 var PHOTO_PREFIX="kei-mileage-photo-";
@@ -460,6 +439,10 @@ var RECORD=!!BAKED;           /* this file is a sent batch, not the working app 
 var S=null;
 var storageOK=true, storageErr="";
 var draft={proj:"", veh:"", photo:null};
+/* Picking a project or vehicle collapses that section to just the selection
+   (Rory, 2026-09-01) - the start card stays one screen tall. Tapping the
+   selection or "Change" reopens the full list. */
+var projOpen=true, vehOpen=true;
 var endPhoto=null;
 var showOld=false;
 
@@ -676,6 +659,17 @@ function showShot(el,dataURL,label,onClear){
 /* ---------------------------------------------------------------- chips */
 function drawProjects(){
   var host=$("projChips");
+  if(draft.proj&&!projOpen){
+    host.innerHTML='<div class="chips">'+
+      '<button type="button" class="chip on">'+esc(draft.proj)+'</button>'+
+      '<button type="button" class="chip ghost">Change</button></div>';
+    Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
+      b.onclick=function(){ projOpen=true; drawProjects(); };
+    });
+    $("oldHint").className="hint hidden";
+    return;
+  }
+  $("oldHint").className="hint";
   var groups=[["client","Client work"],["kei","KEI / non-billable"]];
   if(showOld) groups.push(["old","Older programs"]);
   var html="";
@@ -690,14 +684,25 @@ function drawProjects(){
   host.innerHTML=html;
   Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
     b.onclick=function(){
-      draft.proj=(draft.proj===b.getAttribute("data-p"))?"":b.getAttribute("data-p");
-      drawProjects(); drawSiteChips("sSiteChips","sNotes",draft.proj);
+      var p=b.getAttribute("data-p");
+      if(draft.proj===p){ draft.proj=""; }          /* tap the lit chip = clear, stay open */
+      else { draft.proj=p; projOpen=false; }        /* pick = collapse */
+      drawProjects();
     };
   });
   $("oldToggle").textContent=showOld?"Hide older programs":"Show older programs";
 }
 function drawVehicles(){
   var host=$("vehChips");
+  if(draft.veh&&!vehOpen){
+    host.innerHTML='<div class="chips">'+
+      '<button type="button" class="chip on">'+esc(draft.veh)+'</button>'+
+      '<button type="button" class="chip ghost">Change</button></div>';
+    Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
+      b.onclick=function(){ vehOpen=true; drawVehicles(); };
+    });
+    return;
+  }
   host.innerHTML=VEHICLES.map(function(v){
     return '<button type="button" class="chip'+(draft.veh===v?" on":"")+
            '" data-v="'+esc(v)+'">'+esc(v)+'</button>';
@@ -706,30 +711,11 @@ function drawVehicles(){
     b.onclick=function(){
       draft.veh=b.getAttribute("data-v");
       S.vehicle=draft.veh; save();
+      vehOpen=false;
       drawVehicles(); drawLastKm();
     };
   });
 }
-function drawSiteChips(hostId,taId,proj){
-  var host=$(hostId);
-  if(!host) return;
-  var pre=sitePrefix(proj||"");
-  var list=SITES.filter(function(s){ return !pre||s.indexOf(pre+"_")===0; });
-  if(!list.length) list=SITES;
-  host.innerHTML=list.map(function(s){
-    var short=s.indexOf("_")>=0?s.slice(s.indexOf("_")+1):s;
-    return '<button type="button" class="chip mini" data-s="'+esc(short)+'">'+esc(short)+'</button>';
-  }).join("");
-  Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
-    b.onclick=function(){
-      var ta=$(taId), s=b.getAttribute("data-s");
-      var cur=ta.value.trim();
-      ta.value=cur?(cur.replace(/[,\s]+$/,"")+", "+s):s;
-      ta.dispatchEvent(new Event("input"));
-    };
-  });
-}
-
 /* ---------------------------------------------------------------- start trip */
 function drawLastKm(){
   var hint=$("lastKmHint");
@@ -842,7 +828,6 @@ function drawOpen(){
       (t.hasStartPhoto?' &middot; photo on file':' &middot; no photo')+'</div>';
 
   $("oNotes").value=t.notes||"";
-  drawSiteChips("oSiteChips","oNotes",t.project);
   var ep=getPhoto(t.id,"end");
   endPhoto=ep;
   showShot($("endShot"),ep,"End odometer",function(){
@@ -1348,7 +1333,6 @@ function render(){
   drawOpen();
   drawProjects();
   drawVehicles();
-  drawSiteChips("sSiteChips","sNotes",draft.proj);
   drawLastKm();
   drawList();
   drawSend();
@@ -1362,6 +1346,7 @@ function init(){
   probeStorage();
   S=load();
   draft.veh=S.vehicle||"";
+  vehOpen=!draft.veh;
   $("driver").value=S.driver||"";
   $("sDate").value=todayISO();
 
