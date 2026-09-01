@@ -308,21 +308,26 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     </div>
 
     <div class="f">
-      <label style="display:flex;align-items:center;gap:8px;font-weight:600">
-        <input type="checkbox" id="distMode" style="width:auto;margin:0">
-        <span>No odometer &mdash; enter trip distance instead</span></label>
+      <label for="sEndKm">End odometer (km)</label>
+      <div class="withbtn">
+        <input type="text" id="sEndKm" class="odo" inputmode="decimal" placeholder="000000">
+        <button class="btn cam" id="sEndCamBtn" title="Photo of the odometer">&#128247;</button>
+      </div>
+      <input type="file" id="sEndCam" accept="image/*" class="hidden">
+      <div class="shot hidden" id="sEndShot"></div>
+      <p class="hint">Still driving? Leave this blank and add it when you park.</p>
     </div>
 
     <div class="row">
       <div>
-        <label for="sDate">Date</label>
-        <input type="date" id="sDate">
+        <label for="sDate">Date (YYYY-MM-DD)</label>
+        <input type="text" id="sDate" class="mono" inputmode="numeric" placeholder="2026-01-31">
       </div>
     </div>
 
     <button class="btn pri big" id="startBtn" style="margin-top:12px">Start trip</button>
-    <p class="hint">Saved on the phone the moment you press this. Come back and add the end
-      odometer when you get out of the truck.</p>
+    <p class="hint">Saved on the phone the moment you press this. A trip whose end is blank
+      stays open at the top of the page until you add the reading.</p>
   </div>
 
   <div class="card" id="listCard">
@@ -387,7 +392,7 @@ var BAKED=null;/*BAKEDCFG*/
 /* ------------------------------------------------------------------ build
    Bump BUILD and the filename together on every handover, so a phone can be
    checked against the file it came from without opening a file browser. */
-var BUILD="3";
+var BUILD="4";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -438,7 +443,7 @@ var $=function(id){ return document.getElementById(id); };
 var RECORD=!!BAKED;           /* this file is a sent batch, not the working app */
 var S=null;
 var storageOK=true, storageErr="";
-var draft={proj:"", veh:"", photo:null};
+var draft={proj:"", veh:"", photo:null, endPhoto:null};
 /* Picking a project or vehicle collapses that section to just the selection
    (Rory, 2026-09-01) - the start card stays one screen tall. Tapping the
    selection or "Change" reopens the full list. */
@@ -468,6 +473,14 @@ function num(v){
   if(s==="") return null;
   if(!/^-?\d*\.?\d+$/.test(s)) return NaN;
   return parseFloat(s);
+}
+/* The date is typed, not picked: <input type=date> renders in the phone's locale
+   (e.g. 09/01/2026) and Rory wants YYYY-MM-DD on screen (2026-09-01). Everything
+   downstream - file names, mileage.json, the CSV - already stores ISO. */
+function validDate(s){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s||"")) return false;
+  var p=s.split("-"), d=new Date(+p[0],+p[1]-1,+p[2]);
+  return d.getFullYear()===+p[0]&&d.getMonth()===+p[1]-1&&d.getDate()===+p[2];
 }
 function fmtKm(n){
   if(n===null||n===undefined||isNaN(n)) return "-";
@@ -733,28 +746,34 @@ function drawLastKm(){
   var a=$("useLast");
   if(a) a.onclick=function(){ $("startKm").value=String(last.end_km); };
 }
-function applyDistMode(){
-  var on=$("distMode").checked;
-  $("startKmLab").textContent=on?"Trip distance (km)":"Start odometer (km)";
-  $("startKm").placeholder=on?"0":"000000";
-  $("lastKmHint").className=on?"hint hidden":"hint";
-  /* A distance entry is a finished trip the moment it is saved - there is no second
-     reading to come back for, so the button must not promise one. */
-  $("startBtn").textContent=on?"Log completed trip":"Start trip";
+function syncStartBtn(){
+  /* both readings in -> the trip is complete the moment it is saved */
+  var done=num($("sEndKm").value)!==null;
+  $("startBtn").textContent=done?"Log trip":"Start trip";
 }
 function startTrip(){
-  var mode=$("distMode").checked?"dist":"odo";
   var kmv=num($("startKm").value);
+  var env=num($("sEndKm").value);
   var problems=[];
   if(!draft.proj) problems.push("Pick the client or project this trip is for.");
   if(!draft.veh)  problems.push("Pick the vehicle.");
-  if(mode==="odo"){
-    if(kmv===null) problems.push("Enter the start odometer reading, or photograph it and type what it says.");
-    else if(isNaN(kmv)) problems.push("The start odometer is not a number.");
-    else if(kmv<0) problems.push("An odometer reading cannot be negative.");
+  if(kmv===null) problems.push("Enter the start odometer reading, or photograph it and type what it says. A vehicle with no odometer: enter 0 here and the trip distance as the end reading.");
+  else if(isNaN(kmv)) problems.push("The start odometer is not a number.");
+  else if(kmv<0) problems.push("An odometer reading cannot be negative.");
+  if(env!==null){
+    if(isNaN(env)) problems.push("The end odometer is not a number.");
+    else if(env<0) problems.push("An odometer reading cannot be negative.");
+    else if(kmv!==null&&!isNaN(kmv)){
+      if(env<kmv) problems.push("The end reading ("+fmtKm(env)+" km) is lower than the start ("+
+        fmtKm(kmv)+" km). A trip cannot run the odometer backwards - check which reading is which.");
+      else if(env===kmv) problems.push("Start and end are identical, so the trip is 0 km. "+
+        "The office refuses a 0 km trip.");
+    }
   }
-  if(!$("sDate").value) problems.push("Set the date.");
+  if(!validDate($("sDate").value)) problems.push("The date has to be YYYY-MM-DD, e.g. "+todayISO()+".");
   if(problems.length){ alert(problems.join("\n\n")); return; }
+  if(env!==null&&env-kmv>2000&&
+     !confirm(fmtKm(env-kmv)+" km in a single trip is unusually long.\n\nSave it anyway?")) return;
 
   S.seq=(S.seq||0)+1;
   var id=$("sDate").value.replace(/-/g,"")+"-"+String(S.seq);
@@ -765,33 +784,26 @@ function startTrip(){
     vehicle:draft.veh,
     project:draft.proj,
     notes:$("sNotes").value.trim(),
-    mode:mode,
-    start_km:(mode==="odo"?kmv:0),
-    end_km:(mode==="dist"?num($("startKm").value):null),
+    mode:"odo",
+    start_km:kmv,
+    end_km:env,
     startedAt:nowISO(),
-    endedAt:null,
+    endedAt:(env!==null?nowISO():null),
     build:BUILD,
     sent:false, sentAt:null,
     hasStartPhoto:false, hasEndPhoto:false
   };
-  /* Distance mode has no separate end reading: the number typed IS the distance,
-     stored as 0 -> N, which is exactly how the existing log records the CRV. */
-  if(mode==="dist"){
-    if(t.end_km===null||isNaN(t.end_km)||t.end_km<=0){
-      alert("Enter the trip distance in km."); S.seq--; return;
-    }
-    t.endedAt=t.startedAt;
-  }
   if(draft.photo){ t.hasStartPhoto=putPhoto(t.id,"start",draft.photo); }
+  if(draft.endPhoto){ t.hasEndPhoto=putPhoto(t.id,"end",draft.endPhoto); }
 
   S.trips.push(t);
   S.vehicle=draft.veh;
   save(true);
 
-  draft.photo=null;
-  $("startKm").value=""; $("sNotes").value="";
-  $("distMode").checked=false; applyDistMode();
-  showShot($("startShot"),null);
+  draft.photo=null; draft.endPhoto=null;
+  $("startKm").value=""; $("sEndKm").value=""; $("sNotes").value="";
+  showShot($("startShot"),null); showShot($("sEndShot"),null);
+  syncStartBtn();
   render();
   window.scrollTo(0,0);
 }
@@ -973,13 +985,13 @@ function editTrip(id){
     return '<option value="'+esc(v)+'"'+(v===t.vehicle?" selected":"")+'>'+esc(v)+'</option>';
   }).join("");
   $("dlgBody").innerHTML=
-    '<div class="f"><label>Date</label><input type="date" id="eDate" value="'+esc(t.date)+'"></div>'+
+    '<div class="f"><label>Date (YYYY-MM-DD)</label><input type="text" id="eDate" class="mono" inputmode="numeric" value="'+esc(t.date)+'"></div>'+
     '<div class="f"><label>Client / project</label><select id="eProj">'+opts+'</select></div>'+
     '<div class="f"><label>Vehicle</label><select id="eVeh">'+vopts+'</select></div>'+
     '<div class="f"><label>Sites / notes</label><textarea id="eNotes">'+esc(t.notes||"")+'</textarea></div>'+
-    '<div class="row"><div><label>'+(t.mode==="dist"?"Start (0)":"Start odometer")+'</label>'+
+    '<div class="row"><div><label>Start odometer</label>'+
       '<input type="text" id="eStart" inputmode="decimal" value="'+esc(t.start_km)+'"></div>'+
-      '<div><label>'+(t.mode==="dist"?"Distance (km)":"End odometer")+'</label>'+
+      '<div><label>End odometer</label>'+
       '<input type="text" id="eEnd" inputmode="decimal" value="'+
         esc(t.end_km===null||t.end_km===undefined?"":t.end_km)+'"></div></div>'+
     '<p class="hint">Leave the end blank to put the trip back in progress. Clearing a reading '+
@@ -998,7 +1010,7 @@ function editTrip(id){
       if(en===st){ alert("Start and end are identical, so the trip is 0 km. The office "+
                          "refuses a 0 km trip."); return; }
     }
-    if(!$("eDate").value){ alert("Set the date."); return; }
+    if(!validDate($("eDate").value)){ alert("The date has to be YYYY-MM-DD, e.g. "+todayISO()+"."); return; }
     t.date=$("eDate").value;
     t.project=$("eProj").value;
     t.vehicle=$("eVeh").value;
@@ -1280,7 +1292,9 @@ function showInstallUI(){
   var b=$("installBanner"); if(!b) return;
   $("installMsg").innerHTML=IOS
     ? "Install before logging trips: tap <b>Share</b>, then <b>Add to Home Screen</b>. Trips typed in this tab will NOT follow into the installed app &mdash; <b>Send</b> any trips here first."
-    : "Install this on the phone so it opens from an icon and works with no signal.";
+    : (deferredInstall
+       ? "Put this on the home screen so it opens from an icon and works with no signal."
+       : "Put this on the home screen: Chrome menu &#8942; &rarr; <b>Add to Home screen</b>. It then opens from an icon and works with no signal.");
   $("installBtn").classList.toggle("hidden",IOS||!deferredInstall);
   b.classList.remove("hidden");
 }
@@ -1324,7 +1338,9 @@ function setupApp(){
     save(true);
     location.reload();
   });
-  if(IOS) showInstallUI();
+  /* the banner shows on EVERY platform until the app is actually installed -
+     beforeinstallprompt upgrades it with a one-tap Install button when it fires */
+  showInstallUI();
 }
 
 /* ---------------------------------------------------------------- render/boot */
@@ -1351,7 +1367,7 @@ function init(){
   $("sDate").value=todayISO();
 
   $("oldToggle").onclick=function(){ showOld=!showOld; drawProjects(); };
-  $("distMode").onchange=applyDistMode;
+  $("sEndKm").oninput=syncStartBtn;
   $("startBtn").onclick=startTrip;
   $("endBtn").onclick=endTrip;
   $("endKm").oninput=drawOpenDist;
@@ -1384,6 +1400,19 @@ function init(){
       pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
     });
   };
+  $("sEndCamBtn").onclick=function(){ $("sEndCam").click(); };
+  $("sEndCam").onchange=function(){
+    var f=this.files&&this.files[0]; this.value="";
+    if(!f) return;
+    pill("Reading photo...","dirty");
+    shrink(f,function(d){
+      draft.endPhoto=d;
+      showShot($("sEndShot"),d,"End odometer",function(){
+        draft.endPhoto=null; showShot($("sEndShot"),null);
+      });
+      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
+    });
+  };
   $("endCamBtn").onclick=function(){ $("endCam").click(); };
   $("endCam").onchange=function(){
     var f=this.files&&this.files[0]; this.value="";
@@ -1398,7 +1427,7 @@ function init(){
     });
   };
 
-  applyDistMode();
+  syncStartBtn();
   render();
   setupApp();
 

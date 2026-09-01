@@ -3,7 +3,7 @@
    A byte-different sw.js is what makes phones pick up a new build.
    Copied from the Field Sheet app's worker (b13), which is the proven original. */
 "use strict";
-var CACHE = "kei-mileage-b3";
+var CACHE = "kei-mileage-b4";
 var ASSETS = [
   "./",
   "./index.html",
