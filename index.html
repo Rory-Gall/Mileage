@@ -207,6 +207,12 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .stack{display:flex;gap:8px;flex-wrap:wrap}
 .stack>*{flex:1 1 130px}
 
+.tag.sok{background:var(--good-bg);color:var(--good)}
+.tag.swait{background:var(--warn-bg);color:var(--warn)}
+.tag.sbad{background:var(--bad-bg);color:var(--bad)}
+header.top .pill+.pill{margin-left:0}
+.syncline{font-size:14px;line-height:1.5}
+.syncline b{font-weight:800}
 .recshots{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0}
 .recshots figure{margin:0;width:230px}
 .recshots img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}
@@ -219,6 +225,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div class="wrap">
     <span class="brand">KEI <span>/ Mileage</span> <span class="build" id="buildBadge">build 1</span></span>
     <span class="pill" id="pill">Ready</span>
+    <span class="pill" id="syncPill">&nbsp;</span>
   </div>
 </header>
 
@@ -335,8 +342,21 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div id="list"></div>
   </div>
 
+  <div class="card" id="syncCard">
+    <h2><span class="n">3</span> Sync to the office</h2>
+    <div class="syncline" id="syncState"></div>
+    <div class="stack" style="margin-top:10px">
+      <button class="btn pri" id="signInBtn" type="button">Sign in with Microsoft</button>
+      <button class="btn" id="syncNowBtn" type="button">Sync now</button>
+      <button class="btn sm" id="signOutBtn" type="button">Sign out</button>
+    </div>
+    <p class="hint">Once you are signed in, trips go to the office by themselves whenever this
+      app is open and the phone has signal &mdash; nothing to press. Each trip shows
+      <b>Synced</b> only after the office copy has been read back and matches.</p>
+  </div>
+
   <div class="card" id="sendCard">
-    <h2><span class="n">3</span> Send to the office</h2>
+    <h2><span class="n">4</span> Send a file (backup)</h2>
     <div id="sendSummary"></div>
     <div class="f" style="margin-top:10px">
       <label style="display:flex;align-items:center;gap:8px;font-weight:600">
@@ -354,7 +374,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 
   <div class="card" id="setCard">
-    <h2><span class="n">4</span> This phone</h2>
+    <h2><span class="n">5</span> This phone</h2>
     <div class="row">
       <div>
         <label for="driver">Driver</label>
@@ -363,7 +383,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     </div>
     <p class="hint" id="storeHint"></p>
     <div class="stack" style="margin-top:10px">
-      <button class="btn sm" id="purgeBtn">Delete sent trips</button>
+      <button class="btn sm" id="purgeBtn">Clear synced trips</button>
       <button class="btn sm danger" id="wipeBtn">Erase everything</button>
     </div>
   </div>
@@ -392,7 +412,7 @@ var BAKED=null;/*BAKEDCFG*/
 /* ------------------------------------------------------------------ build
    Bump BUILD and the filename together on every handover, so a phone can be
    checked against the file it came from without opening a file browser. */
-var BUILD="4";
+var BUILD="5";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -450,6 +470,437 @@ var draft={proj:"", veh:"", photo:null, endPhoto:null};
 var projOpen=true, vehOpen=true;
 var endPhoto=null;
 var showOld=false;
+
+/* ================================================================ OFFICE SYNC
+   Build 5 (2026-11-12). Trips go to the SharePoint list "Mileage Trips" on the
+   KEI Tasks site whenever the app is open with signal. A weekday job on the
+   office PC turns that list into the Mileage tool on the website's Internal Tools.
+
+   Rules, all load-bearing:
+   - A trip is marked Synced ONLY after its office row is read back and matches,
+     field by field, at the same edit number (Rev). A send that merely LOOKED
+     fine never clears a trip.
+   - TripId = device id + trip id + a random tag, and the list enforces it as
+     UNIQUE, so a retry, a double tap or two phones can never double a trip.
+   - Every edit bumps Rev; anything with Rev above what the office confirmed is
+     sent again. Deletes become State=deleted on the office row (a tombstone),
+     never a silently vanished trip.
+   - Same Microsoft app and sign-in code as the task board. The sign-in is the
+     person's own: what they can write is decided by SharePoint, not this file.
+   Nothing in MS below is a secret - a public client has no secret by design. */
+var MS={
+  tenantId:"ff85c429-ed5b-458f-aca2-478fd1f538e1",
+  clientId:"d6fb3bfc-b421-4d95-b7b3-f3cce4dad884",
+  siteId:"kootenayenv.sharepoint.com,d6190ecd-1fad-4ef0-9fcc-eebca2ff6a06,6f9302de-fdc0-42da-a9dd-a48c907c14a5",
+  trips:"34b49ecb-fc6a-4bf4-8a69-c8d6839670f8",
+  devices:"0734d98e-8106-4047-9e78-b11daee26de6"
+};
+var GRAPH="https://graph.microsoft.com/v1.0";
+
+function newUid(bytes){
+  var a=new Uint8Array(bytes||8);
+  (window.crypto||window.msCrypto).getRandomValues(a);
+  return Array.prototype.map.call(a,function(b){ return (b<16?"0":"")+b.toString(16); }).join("");
+}
+
+/* Microsoft sign-in: authorization code + PKCE, straight against Microsoft's
+   endpoints - the board's auth.js, adapted. Tokens live in localStorage (not
+   sessionStorage like the board): an installed phone app is closed and reopened
+   all day, and a sign-in that died with every close would never sync. */
+var AUTH=(function(){
+  var AUTHORITY="https://login.microsoftonline.com/"+MS.tenantId+"/oauth2/v2.0";
+  var SCOPES="https://graph.microsoft.com/Sites.ReadWrite.All https://graph.microsoft.com/User.Read offline_access openid profile";
+  var KEY="kei_mileage_auth", VKEY="kei_mileage_pkce", RKEY="kei_mileage_return";
+  var EXPIRED="signed-out";
+  var state=null;
+  function redirectUri(){ return location.origin+location.pathname.replace(/[^/]*$/,""); }
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){ return null; } }
+  function keepState(s){ state=s; try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
+  function clear(){ state=null; try{ localStorage.removeItem(KEY); sessionStorage.removeItem(VKEY); }catch(e){} }
+  function b64url(bytes){
+    var s=""; new Uint8Array(bytes).forEach(function(b){ s+=String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function verifier(){ var a=new Uint8Array(32); crypto.getRandomValues(a); return b64url(a); }
+  function challenge(v){ return crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)).then(b64url); }
+  function form(url,data){
+    var body=Object.keys(data).map(function(k){ return encodeURIComponent(k)+"="+encodeURIComponent(data[k]); }).join("&");
+    return fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body})
+      .then(function(r){ return r.json(); });
+  }
+  function identity(tok){
+    var out={name:"",email:""};
+    if(!tok.id_token) return out;
+    try{
+      var p=tok.id_token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+      var c=JSON.parse(decodeURIComponent(escape(atob(p+"===".slice((p.length+3)%4)))));
+      out.name=c.name||""; out.email=(c.preferred_username||c.upn||"").toLowerCase();
+    }catch(e){}
+    return out;
+  }
+  function keep(tok){
+    if(!tok.access_token) return null;
+    var who=identity(tok);
+    var s={access_token:tok.access_token,
+      refresh_token:tok.refresh_token||(state&&state.refresh_token)||"",
+      expires_at:Date.now()+(Number(tok.expires_in||3600)*1000),
+      name:who.name||(state&&state.name)||"", email:who.email||(state&&state.email)||""};
+    keepState(s);
+    return s;
+  }
+  function signIn(){
+    var v=verifier();
+    try{ sessionStorage.setItem(VKEY,v); sessionStorage.setItem(RKEY,location.hash); }catch(e){}
+    return challenge(v).then(function(ch){
+      var q={client_id:MS.clientId,response_type:"code",redirect_uri:redirectUri(),response_mode:"query",
+        scope:SCOPES,code_challenge:ch,code_challenge_method:"S256",prompt:"select_account"};
+      location.href=AUTHORITY+"/authorize?"+Object.keys(q).map(function(k){ return k+"="+encodeURIComponent(q[k]); }).join("&");
+    });
+  }
+  function finishRedirect(){
+    var p=new URLSearchParams(location.search);
+    var code=p.get("code"), err=p.get("error");
+    if(err){ history.replaceState({},"",redirectUri()); return Promise.reject(new Error(p.get("error_description")||err)); }
+    if(!code) return Promise.resolve(null);
+    var v=""; try{ v=sessionStorage.getItem(VKEY)||""; }catch(e){}
+    return form(AUTHORITY+"/token",{client_id:MS.clientId,grant_type:"authorization_code",code:code,
+      redirect_uri:redirectUri(),code_verifier:v,scope:SCOPES}).then(function(tok){
+      var back=""; try{ back=sessionStorage.getItem(RKEY)||""; sessionStorage.removeItem(VKEY); sessionStorage.removeItem(RKEY); }catch(e){}
+      history.replaceState({},"",redirectUri()+back);
+      if(!tok.access_token) throw new Error(tok.error_description||tok.error||"sign-in failed");
+      return keep(tok);
+    });
+  }
+  var refreshing=null;
+  function token(){
+    if(!state) state=load();
+    if(!state) return Promise.reject(new Error(EXPIRED));
+    if(state.expires_at-120000>Date.now()) return Promise.resolve(state.access_token);
+    if(refreshing) return refreshing;
+    if(!state.refresh_token){ clear(); return Promise.reject(new Error(EXPIRED)); }
+    refreshing=form(AUTHORITY+"/token",{client_id:MS.clientId,grant_type:"refresh_token",
+      refresh_token:state.refresh_token,scope:SCOPES}).then(function(tok){
+      refreshing=null;
+      /* Microsoft caps a browser app's sign-in at 24 hours; past that it answers
+         invalid_grant and the person signs in again (usually one tap). ONLY a real
+         "sign in again" answer signs the phone out - a busy or temporarily-unavailable
+         Microsoft must not throw away a working sign-in (review, 2026-11-12). */
+      if(!tok.access_token){
+        var hard=/invalid_grant|interaction_required|login_required|consent_required|invalid_client/.test(tok.error||"");
+        if(hard){ clear(); throw new Error(EXPIRED); }
+        var t=new Error("Microsoft did not answer the sign-in ("+(tok.error||"no reply")+")");
+        t.offline=true; t.temp=true; throw t;
+      }
+      return keep(tok).access_token;
+    },function(e){
+      refreshing=null;
+      var x=new Error("no connection"); x.offline=true; throw x;   /* no signal is NOT a sign-out */
+    });
+    return refreshing;
+  }
+  return {
+    EXPIRED:EXPIRED,
+    start:function(){ state=load(); return finishRedirect(); },
+    signIn:signIn, token:token,
+    /* after a 401 from Graph: make the next token() refresh instead of reusing */
+    forceRefresh:function(){ if(!state) state=load(); if(state){ state.expires_at=0; } },
+    signOut:function(){ clear(); },
+    signedIn:function(){ if(!state) state=load(); return !!state; },
+    who:function(){ if(!state) state=load(); return state?{name:state.name,email:state.email}:null; }
+  };
+})();
+
+var SYNC=(function(){
+  var busy=false, again=false, soonTimer=null;
+  var HEARTBEAT_MS=10*60*1000;
+  var last={state:"idle", msg:""};
+
+  function tripId(t){ return S.deviceId+"-"+t.id+"-"+t.uid; }
+  function needs(t){ return (t.rev||1)>(t.syncRev||0); }
+  function pending(){ return S?S.trips.filter(needs).length+(S.tombs||[]).length:0; }
+  function itemsPath(list){ return "/sites/"+MS.siteId+"/lists/"+list+"/items"; }
+
+  /* One Graph call. Every failure is classified, never swallowed:
+     e.offline (no signal), e.auth (must sign in again), or e.status + body. */
+  function http(method,path,body,retried){
+    return AUTH.token().then(function(tok){
+      var h={"Authorization":"Bearer "+tok,"Accept":"application/json"};
+      if(body!==undefined) h["Content-Type"]="application/json";
+      return fetch(GRAPH+path,{method:method,headers:h,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store"})
+        .then(function(r){
+          return r.text().then(function(txt){
+            if(r.ok) return txt?JSON.parse(txt):{};
+            var e=new Error("HTTP "+r.status+" "+(txt||"").slice(0,240));
+            e.status=r.status; e.body=txt||"";
+            if(r.status===401){
+              /* one fresh token and one more try before calling it a sign-out */
+              if(!retried){ AUTH.forceRefresh(); return http(method,path,body,true); }
+              AUTH.signOut(); e.auth=true;
+            }
+            throw e;
+          });
+        },function(){ var e=new Error("no connection"); e.offline=true; throw e; });
+    },function(e){
+      if(e&&e.offline) throw e;
+      var x=new Error("not signed in"); x.auth=true; throw x;
+    });
+  }
+  function hex(buf){ return Array.prototype.map.call(new Uint8Array(buf),function(b){ return (b<16?"0":"")+b.toString(16); }).join(""); }
+  function sha(s){ return s?crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(hex):Promise.resolve(""); }
+  function filterBy(field,value){
+    return encodeURIComponent("fields/"+field+" eq '"+String(value).replace(/'/g,"''")+"'")
+      .replace(/%2F/g,"/").replace(/%27/g,"'");
+  }
+  function findId(list,field,value){
+    return http("GET",itemsPath(list)+"?$select=id&$filter="+filterBy(field,value)).then(function(r){
+      var v=r.value||[];
+      if(v.length>1) throw new Error("the office list has "+v.length+" rows for one trip - tell Rory");
+      return v.length?v[0].id:null;
+    });
+  }
+  function str(v){ return (v===null||v===undefined)?"":String(v).replace(/\r\n/g,"\n"); }
+  function numEq(a,b){
+    var ea=(a===null||a===undefined||a===""), eb=(b===null||b===undefined||b==="");
+    if(ea||eb) return ea&&eb;
+    return Math.abs(Number(a)-Number(b))<1e-6;
+  }
+  function noNulls(f){ var o={}; Object.keys(f).forEach(function(k){ if(f[k]!==null&&f[k]!==undefined) o[k]=f[k]; }); return o; }
+  function isUnique(e){ return e&&e.status===400&&/unique constraint/i.test(e.body||""); }
+
+  /* Create-or-update by unique key, then read back. Shared by trips and the device row. */
+  function upsert(list,keyField,keyValue,knownId,fields,check,revGuard){
+    var base=itemsPath(list);
+    function doPatch(id){
+      return http("PATCH",base+"/"+id+"/fields",fields).then(function(){ return id; },function(e){
+        if(e.status===404){ var x=new Error("the office row went missing - re-sending"); x.gone=true; throw x; }
+        throw e;
+      });
+    }
+    /* Never write an OLDER edit over a newer one. An old copy of the app (a second
+       window, a tab left open) can hold a stale trip; the office's Rev says which is
+       newer (review, 2026-11-12). */
+    function patch(id){
+      if(revGuard===undefined||revGuard===null) return doPatch(id);
+      return http("GET",base+"/"+id+"?$expand=fields($select=Rev)").then(function(r){
+        var have=Number(((r.fields||{}).Rev)||0);
+        if(have>revGuard){
+          var x=new Error("the office already has a newer edit of this trip - close other copies of the app and reopen it");
+          x.stale=true; throw x;
+        }
+        return doPatch(id);
+      },function(e){
+        if(e.status===404){ var x=new Error("the office row went missing - re-sending"); x.gone=true; throw x; }
+        throw e;
+      });
+    }
+    var idP=knownId?Promise.resolve(knownId):findId(list,keyField,keyValue);
+    return idP.then(function(id){
+      if(id) return patch(id);
+      return http("POST",base,{fields:noNulls(fields)}).then(function(r){ return r.id; },function(e){
+        if(!isUnique(e)) throw e;
+        /* somebody (a retry, an earlier run that lost its answer) already made it */
+        return findId(list,keyField,keyValue).then(function(found){ if(!found) throw e; return patch(found); });
+      });
+    }).then(function(id){
+      return http("GET",base+"/"+id+"?$expand=fields($select="+Object.keys(check).join(",")+")").then(function(r){
+        var b=r.fields||{}, bad=[];
+        Object.keys(check).forEach(function(k){
+          var want=check[k];
+          if(typeof want==="number"||k==="EndKm") { if(!numEq(want,b[k])) bad.push(k); }
+          else if(str(want)!==str(b[k])) bad.push(k);
+        });
+        if(bad.length){
+          var x=new Error("the office copy did not match after saving ("+bad.join(", ")+") - will send again");
+          x.mismatch=true; throw x;
+        }
+        return id;
+      });
+    });
+  }
+
+  function pushTrip(id){
+    var t=findTrip(id); if(!t) return Promise.resolve();
+    var runS=S, rev=t.rev||1, tid=tripId(t);
+    var ps=t.hasStartPhoto?getPhoto(t.id,"start"):null, pe=t.hasEndPhoto?getPhoto(t.id,"end"):null;
+    return Promise.all([sha(ps),sha(pe)]).then(function(h){
+      var sent=t.pSent||{};
+      var f={Title:tid,TripId:tid,TripDate:t.date,Driver:(t.driver||S.driver||"").trim(),
+        Vehicle:t.vehicle,Project:t.project,Notes:t.notes||"",StartKm:t.start_km,
+        EndKm:(t.end_km===undefined?null:t.end_km),
+        State:(t.end_km===null||t.end_km===undefined)?"open":"closed",
+        StartedAt:t.startedAt||"",EndedAt:t.endedAt||"",Rev:rev,DeviceId:S.deviceId,
+        AppBuild:BUILD,SyncedAt:nowISO()};
+      /* photos travel only when they changed - 150 KB on every notes edit would
+         eat a field phone's data plan */
+      if(h[0]!==(sent.start||"")){ f.PhotoStart=ps||""; f.PhotoStartHash=h[0]; }
+      if(h[1]!==(sent.end||"")){ f.PhotoEnd=pe||""; f.PhotoEndHash=h[1]; }
+      var check={TripId:tid,TripDate:f.TripDate,Driver:f.Driver,Vehicle:f.Vehicle,Project:f.Project,
+        Notes:f.Notes,StartKm:f.StartKm,EndKm:f.EndKm,State:f.State,Rev:rev,
+        PhotoStartHash:h[0],PhotoEndHash:h[1]};
+      return upsert(MS.trips,"TripId",tid,t.spId,f,check,rev).then(function(spId){
+        if(S!==runS) return;
+        var t2=findTrip(id); if(!t2) return;          /* deleted meanwhile: its tombstone follows */
+        t2.spId=spId;
+        t2.pSent={start:h[0],end:h[1]};
+        if((t2.rev||1)===rev){ t2.syncRev=rev; t2.syncErr=""; t2.syncAt=nowISO(); t2.syncTries=0; }
+        else again=true;                                /* edited while sending: go again */
+        save(true);
+      },function(e){
+        var t2=(S===runS)?findTrip(id):null;
+        if(t2&&(e.gone||e.mismatch)){ t2.spId=e.gone?null:t2.spId; t2.pSent={}; save(true); }
+        throw e;
+      });
+    });
+  }
+
+  function pushTomb(tb){
+    var base=itemsPath(MS.trips), runS=S;
+    var idP=tb.spId?Promise.resolve(tb.spId):findId(MS.trips,"TripId",tb.tid);
+    return idP.then(function(id){
+      if(!id) return;                                   /* never reached the office: nothing to mark */
+      return http("PATCH",base+"/"+id+"/fields",{State:"deleted",Rev:tb.rev,SyncedAt:nowISO()}).then(function(){
+        return http("GET",base+"/"+id+"?$expand=fields($select=State,Rev)").then(function(r){
+          var b=r.fields||{};
+          if(b.State!=="deleted"||!numEq(b.Rev,tb.rev)){ var x=new Error("the delete did not stick at the office - will try again"); x.mismatch=true; throw x; }
+        });
+      },function(e){ if(e.status===404) return; throw e; });
+    }).then(function(){
+      if(S!==runS) return;
+      S.tombs=(S.tombs||[]).filter(function(x){ return x.tid!==tb.tid; });
+      save(true);
+    });
+  }
+
+  function platform(){
+    var u=navigator.userAgent||"";
+    return /iPhone|iPad|iPod/.test(u)?"iPhone":/Android/.test(u)?"Android":/Windows/.test(u)?"Windows":/Mac/.test(u)?"Mac":"other";
+  }
+  function heartbeat(){
+    var who=AUTH.who()||{}, runS=S;
+    var open=S.trips.filter(function(t){ return t.end_km===null||t.end_km===undefined; }).length;
+    var f={Title:S.deviceId,DeviceId:S.deviceId,Driver:(S.driver||"").trim(),SignedInAs:who.email||"",
+      AppBuild:BUILD,Platform:platform(),LastSync:nowISO(),Pending:pending(),OpenTrips:open};
+    return upsert(MS.devices,"DeviceId",S.deviceId,S.deviceSpId,f,{DeviceId:S.deviceId,LastSync:f.LastSync})
+      .then(function(id){ if(S!==runS) return; S.deviceSpId=id; S.lastBeat=Date.now(); S.beatErr=""; save(true); },
+            function(e){ if(S===runS&&e.gone){ S.deviceSpId=null; } throw e; });
+  }
+
+  function friendly(e){
+    if(e.temp) return "Microsoft is busy - will try again";
+    if(e.auth) return "Sign in again to sync";
+    if(e.offline) return "No signal";
+    if(e.status===403) return "SharePoint refused this sign-in (HTTP 403) - tell Rory";
+    if(e.status===429||e.status===503) return "SharePoint is busy - will try again";
+    return e.message||String(e);
+  }
+  /* banners too, not just the sync card: an expired sign-in must put up its
+     "sign in" banner the moment it is found, not on the next screen refresh */
+  function setState(st,msg){ last={state:st,msg:msg||""}; if(S&&!RECORD){ drawSync(); drawBanners(); } }
+
+  function run(reason){
+    if(RECORD||!S||!HOSTED) return Promise.resolve();
+    if(busy){ again=true; return Promise.resolve(); }
+    if(!navigator.onLine){ setState("offline"); return Promise.resolve(); }
+    if(!AUTH.signedIn()){ setState("signedout"); return Promise.resolve(); }
+    /* once a phone has ever been signed in, a trip may be at the office even when
+       the phone never heard back - so every delete from then on leaves a tombstone */
+    if(!S.everSignedIn){ S.everSignedIn=true; save(true); }
+    var ids=S.trips.filter(needs).map(function(t){ return t.id; });
+    var tombs=(S.tombs||[]).slice();
+    var beatDue=Date.now()-(S.lastBeat||0)>HEARTBEAT_MS;
+    if(!ids.length&&!tombs.length&&!beatDue){ setState(S.lastSyncErr?"error":"ok",S.lastSyncErr); return Promise.resolve(); }
+
+    busy=true; again=false;
+    var runS=S, firstErr=null, stop=false, moved=0;
+    setState("syncing");
+    var chain=Promise.resolve();
+    function step(fn,tripIdForErr,tomb){
+      chain=chain.then(function(){
+        if(stop||S!==runS) return;
+        return fn().then(function(){ moved++; },function(e){
+          if(e.auth||e.offline){ stop=true; firstErr=firstErr||e; return; }
+          firstErr=firstErr||e;
+          var t=tripIdForErr?findTrip(tripIdForErr):null;
+          if(t){ t.syncErr=friendly(e); t.syncTries=(t.syncTries||0)+1; save(true); }
+          var live=tomb?(S.tombs||[]).filter(function(x){ return x.tid===tomb.tid; })[0]:null;
+          if(live){ live.tries=(live.tries||0)+1; save(true); }
+          /* a quick second go for a row that went missing or read back wrong - but
+             capped (trips AND deletes), so a field SharePoint keeps changing can't spin
+             the phone in a tight loop. After 3 the 2-minute tick keeps trying, and the
+             trip shows Sync failed with the reason. */
+          var tries=t?t.syncTries:(live?live.tries:99);
+          if((e.gone||e.mismatch)&&tries<3) again=true;
+        });
+      });
+    }
+    ids.forEach(function(id){ step(function(){ return pushTrip(id); },id,null); });
+    tombs.forEach(function(tb){ step(function(){ return pushTomb(tb); },null,tb); });
+    chain=chain.then(function(){
+      /* check in when it is due, or when something actually reached the office
+         (so the tracker's waiting-count is fresh) - not on every failed attempt */
+      if(stop||S!==runS||!(beatDue||moved)) return;
+      return heartbeat().catch(function(e){ if(S===runS){ S.beatErr=friendly(e); } if(e.auth||e.offline) firstErr=firstErr||e; });
+    });
+    return chain.then(function(){
+      busy=false;
+      if(S!==runS) return;
+      if(!firstErr){ S.lastSync=nowISO(); S.lastSyncErr=""; S.everSynced=true; }
+      else if(!firstErr.offline||firstErr.temp){ S.lastSyncErr=friendly(firstErr); }
+      save(true);
+      if(firstErr&&firstErr.auth) setState("signedout");
+      else if(firstErr&&firstErr.offline&&!firstErr.temp) setState("offline");
+      else if(firstErr) setState("error",friendly(firstErr));
+      else setState("ok");
+      render();
+      if(again&&!stop) setTimeout(function(){ run("again"); },1500);
+    },function(e){
+      busy=false; setState("error",friendly(e));
+    });
+  }
+  function soon(){ clearTimeout(soonTimer); soonTimer=setTimeout(function(){ run("edit"); },2500); }
+
+  return {run:run, soon:soon, pending:pending, needs:needs, tripId:tripId,
+          state:function(){ return last; }, busy:function(){ return busy; }};
+})();
+
+function drawSync(){
+  if(!$("syncState")) return;
+  var n=SYNC.pending(), st=SYNC.state(), who=AUTH.signedIn()?AUTH.who():null;
+  var sp=$("syncPill"), line="";
+  if(!HOSTED){
+    line="Syncing works only in the installed app, not in a copied file.";
+    sp.textContent="No sync"; sp.className="pill";
+  }else if(!who){
+    line="<b>Not signed in.</b> "+(n?n+" trip"+(n>1?"s are":" is")+" waiting to reach the office.":"Sign in once and trips go to the office by themselves.");
+    sp.textContent=n?n+" not synced":"Sign in"; sp.className="pill"+(n?" bad":"");
+  }else if(st.state==="syncing"){
+    line="Syncing&hellip;"; sp.textContent="Syncing"; sp.className="pill dirty";
+  }else if(!navigator.onLine||st.state==="offline"){
+    line="<b>No signal.</b> "+(n?n+" trip"+(n>1?"s":"")+" will go the moment there is.":"Everything is already at the office.");
+    sp.textContent=n?n+" waiting":"Synced"; sp.className="pill"+(n?" dirty":" ok");
+  }else if(S.lastSyncErr){
+    line="<b>Sync problem:</b> "+esc(S.lastSyncErr);
+    sp.textContent="Sync problem"; sp.className="pill bad";
+  }else if(n){
+    line=n+" trip"+(n>1?"s":"")+" waiting to sync."; sp.textContent=n+" waiting"; sp.className="pill dirty";
+  }else{
+    line="<b>Everything is at the office.</b>"; sp.textContent="Synced"; sp.className="pill ok";
+  }
+  if(who) line+='<br><span class="hint">Signed in as '+esc(who.email||who.name)+
+    (S.lastSync?' &middot; last sync '+esc(S.lastSync.slice(0,16).replace("T"," ")):"")+'</span>';
+  $("syncState").innerHTML=line;
+  $("signInBtn").classList.toggle("hidden",!!who||!HOSTED);
+  $("syncNowBtn").classList.toggle("hidden",!who);
+  $("signOutBtn").classList.toggle("hidden",!who);
+}
+function syncTag(t){
+  if(!HOSTED) return "";
+  if(!SYNC.needs(t)) return '<span class="tag sok">Synced</span>';
+  if(t.syncErr&&AUTH.signedIn()) return '<span class="tag sbad" title="'+esc(t.syncErr)+'">Sync failed</span>';
+  return '<span class="tag swait">Not synced</span>';
+}
+function touch(t){ t.rev=(t.rev||1)+1; }
+
 
 /* ---------------------------------------------------------------- utilities */
 function todayISO(){
@@ -523,8 +974,26 @@ function probeStorage(){
   }
   return storageOK;
 }
+/* NEEDS_SAVE: set when load() invents ids (a new device id, a trip's uid). They
+   MUST be written before anything syncs - an id made up again on the next launch
+   would put a second copy of the trip (or a second phone row) at the office
+   (review, 2026-11-12). init() saves at once when this is set. */
+var NEEDS_SAVE=false;
 function blank(){
-  return {v:1, driver:"", vehicle:"", trips:[], seq:0};
+  NEEDS_SAVE=true;
+  return {v:1, driver:"", vehicle:"", trips:[], seq:0, deviceId:newUid(8), tombs:[]};
+}
+/* Build 5 adds sync bookkeeping. Older trips get it here, once: a uid (part of
+   the office key), rev 1, and syncRev 0 - so every existing trip syncs once. */
+function migrate(s){
+  if(!s.deviceId){ s.deviceId=newUid(8); NEEDS_SAVE=true; }
+  if(!Array.isArray(s.tombs)) s.tombs=[];
+  s.trips.forEach(function(t){
+    if(!t.uid){ t.uid=newUid(4); NEEDS_SAVE=true; }
+    if(typeof t.rev!=="number") t.rev=1;
+    if(typeof t.syncRev!=="number") t.syncRev=0;
+  });
+  return s;
 }
 function load(){
   if(!storageOK) return blank();
@@ -534,7 +1003,7 @@ function load(){
     var s=JSON.parse(raw);
     if(!s||!Array.isArray(s.trips)) return blank();
     if(typeof s.seq!=="number") s.seq=s.trips.length;
-    return s;
+    return migrate(s);
   }catch(e){ return blank(); }
 }
 var saveTimer=null;
@@ -617,11 +1086,22 @@ function drawBanners(){
       'Fill in <b>Driver</b> at the bottom of this page so the office knows whose vehicle '+
       'the trips are in.</div>');
   }
+  if(S&&HOSTED&&!RECORD){
+    var waiting=SYNC.pending();
+    if(waiting&&!AUTH.signedIn()){
+      out.push('<div class="banner warn"><b>'+waiting+' trip'+(waiting>1?"s haven't":" hasn't")+
+        ' reached the office</b>Sign in with Microsoft once and they go by themselves.'+
+        '<br><button class="btn sm" data-signin="1" type="button">Sign in</button></div>');
+    }else if(S.lastSyncErr&&AUTH.signedIn()&&navigator.onLine){
+      out.push('<div class="banner bad"><b>Trips are not reaching the office</b>'+esc(S.lastSyncErr)+
+        '<br><button class="btn sm" data-syncnow="1" type="button">Try again</button></div>');
+    }
+  }
   var used=storageUsed();
   if(used!==null&&used>STORE_WARN){
     out.push('<div class="banner warn"><b>This phone is nearly full</b>'+
       'The mileage app is using '+Math.round(used/1024)+' KB and a phone usually allows about '+
-      '5 MB. Send your trips, then tap <b>Delete sent trips</b> at the bottom &mdash; otherwise '+
+      '5 MB. Tap <b>Clear synced trips</b> at the bottom &mdash; otherwise '+
       'the next odometer photo will not save.</div>');
   }
   for(var i=0;i<extraBanners.length;i++){
@@ -630,6 +1110,12 @@ function drawBanners(){
       '<br><button class="btn sm" data-dismiss="'+i+'">Dismiss</button></div>');
   }
   $("banners").innerHTML=out.join("");
+  Array.prototype.forEach.call($("banners").querySelectorAll("[data-signin]"),function(b){
+    b.onclick=startSignIn;
+  });
+  Array.prototype.forEach.call($("banners").querySelectorAll("[data-syncnow]"),function(b){
+    b.onclick=function(){ S.lastSyncErr=""; SYNC.run("button"); };
+  });
   Array.prototype.forEach.call($("banners").querySelectorAll("[data-dismiss]"),function(b){
     b.onclick=function(){
       extraBanners.splice(+b.getAttribute("data-dismiss"),1);
@@ -791,7 +1277,8 @@ function startTrip(){
     endedAt:(env!==null?nowISO():null),
     build:BUILD,
     sent:false, sentAt:null,
-    hasStartPhoto:false, hasEndPhoto:false
+    hasStartPhoto:false, hasEndPhoto:false,
+    uid:newUid(4), rev:1, syncRev:0
   };
   if(draft.photo){ t.hasStartPhoto=putPhoto(t.id,"start",draft.photo); }
   if(draft.endPhoto){ t.hasEndPhoto=putPhoto(t.id,"end",draft.endPhoto); }
@@ -805,6 +1292,7 @@ function startTrip(){
   showShot($("startShot"),null); showShot($("sEndShot"),null);
   syncStartBtn();
   render();
+  SYNC.soon();
   window.scrollTo(0,0);
 }
 
@@ -895,10 +1383,12 @@ function endTrip(){
   t.endedAt=nowISO();
   if(endPhoto){ t.hasEndPhoto=putPhoto(t.id,"end",endPhoto); }
   endPhoto=null;
+  touch(t);
   $("endKm").value="";
   showShot($("endShot"),null);
   save(true);
   render();
+  SYNC.soon();
   window.scrollTo(0,0);
 }
 
@@ -942,7 +1432,7 @@ function drawList(){
           (t.notes?"<br>"+esc(t.notes):"")+'</div>'+
         '<div class="l3">'+
           (k===null?'<span class="tag open">Open</span>':"")+
-          (t.sent?'<span class="tag sent">Sent</span>':'<span class="tag">Not sent</span>')+
+          syncTag(t)+(t.sent?'<span class="tag sent">File sent</span>':"")+
           (t.hasStartPhoto||t.hasEndPhoto?'<span class="tag">&#128247; '+
             ((t.hasStartPhoto?1:0)+(t.hasEndPhoto?1:0))+'</span>':"")+
           '<button class="btn sm" data-act="edit" style="margin-left:auto">Edit</button>'+
@@ -968,9 +1458,16 @@ function delTrip(id){
       (tripKm(t)===null?"open":fmtKm(tripKm(t))+" km")+
       (t.sent?"\n\nIt has already been sent to the office, so deleting it here does not "+
               "remove it there.":"\n\nIt has NOT been sent. This cannot be undone."))) return;
+  /* A trip can be at the office even when the phone never heard back (the reply was
+     lost to no signal), so once this phone has EVER signed in, every delete leaves a
+     tombstone. One that finds no office row is simply dropped (review, 2026-11-12). */
+  if(HOSTED&&(t.spId||(t.syncRev||0)>0||SYNC.busy()||AUTH.signedIn()||S.everSignedIn)){
+    S.tombs=S.tombs||[];
+    S.tombs.push({tid:SYNC.tripId(t),spId:t.spId||null,rev:(t.rev||1)+1,date:t.date,project:t.project});
+  }
   dropPhoto(id,"start"); dropPhoto(id,"end");
   S.trips=S.trips.filter(function(x){ return x.id!==id; });
-  save(true); render();
+  save(true); render(); SYNC.soon();
 }
 
 /* ---------------------------------------------------------------- edit dialog */
@@ -1021,10 +1518,11 @@ function editTrip(id){
     else if(!t.endedAt) t.endedAt=nowISO();
     if(t.sent){
       t.sent=false; t.sentAt=null;
-      banner("warn","Edited after sending",
+      if(!AUTH.signedIn()) banner("warn","Edited after sending",
         "This trip was marked unsent again so the correction reaches the office. Send your trips.");
     }
-    save(true); dlg.close(); render();
+    touch(t);
+    save(true); dlg.close(); render(); SYNC.soon();
   };
   $("dlgCancel").onclick=function(){ dlg.close(); };
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
@@ -1120,7 +1618,7 @@ function recordHTML(payload){
   var clone=document.documentElement.cloneNode(true);
   function pick(sel){ return clone.querySelector(sel); }
   ["#openCard","#startCard","#noStart","#listCard","#sendCard","#setCard","#banners","#dlg",
-   "#installBanner","#updatePill"].forEach(function(s){
+   "#installBanner","#updatePill","#syncCard","#syncPill"].forEach(function(s){
     var el=pick(s); if(el) el.parentNode.removeChild(el);
   });
   var rec=pick("#recCard"); if(rec) rec.className="card";
@@ -1197,20 +1695,34 @@ function doCSV(){
 }
 
 /* ---------------------------------------------------------------- housekeeping */
+/* What is safe to clear off the phone: once sync is in use, ONLY trips the
+   office has confirmed at their latest edit. A file-sent trip that never synced
+   is not in the tracker, so it stays. Before anyone has signed in, the old rule
+   (sent as a file) still applies. */
+function clearable(t){
+  if(AUTH.signedIn()||S.everSynced||S.everSignedIn) return (t.syncRev||0)>0&&!SYNC.needs(t)&&t.end_km!==null&&t.end_km!==undefined;
+  return !!t.sent;
+}
 function purgeSent(){
-  var sent=S.trips.filter(function(t){ return t.sent; });
-  if(!sent.length){ alert("There are no sent trips to delete."); return; }
-  if(!confirm("Delete "+sent.length+" sent trip"+(sent.length>1?"s":"")+
-      (sent.length>1?" and their photos":" and its photos")+" from this phone?"+
-      "\n\nThey stay in the office copy you already sent.")) return;
-  sent.forEach(function(t){ dropPhoto(t.id,"start"); dropPhoto(t.id,"end"); });
-  S.trips=S.trips.filter(function(t){ return !t.sent; });
+  var done=S.trips.filter(clearable);
+  if(!done.length){ alert("There are no synced trips to clear."); return; }
+  if(!confirm("Clear "+done.length+" synced trip"+(done.length>1?"s":"")+
+      (done.length>1?" and their photos":" and its photos")+" off this phone?"+
+      "\n\nThe office already has "+(done.length>1?"them":"it")+" - this only frees space here.")) return;
+  done.forEach(function(t){ dropPhoto(t.id,"start"); dropPhoto(t.id,"end"); });
+  var gone={}; done.forEach(function(t){ gone[t.id]=1; });
+  S.trips=S.trips.filter(function(t){ return !gone[t.id]; });
   save(true); render();
 }
 function wipe(){
-  var u=sendable(unsent()).length;
+  /* Pending deletes (tombstones) are KEPT through an erase - they still go to the
+     office - so they are not counted as "lost" (review, 2026-11-12). */
+  var syncing=AUTH.signedIn()||S.everSynced||S.everSignedIn;
+  var u=syncing?S.trips.filter(SYNC.needs).length:sendable(unsent()).length;
+  var nt=(S.tombs||[]).length;
   if(!confirm("Erase every trip and photo on this phone?"+
-      (u?"\n\n"+u+" trip"+(u>1?"s have":" has")+" NOT been sent to the office and will be lost.":"")+
+      (u?"\n\n"+u+" trip"+(u>1?"s have":" has")+" NOT reached the office and will be lost.":"")+
+      (nt?"\n\n"+nt+" deletion"+(nt>1?"s":"")+" waiting to reach the office will still be sent.":"")+
       "\n\nThis cannot be undone.")) return;
   if(u&&!confirm("Really erase "+u+" unsent trip"+(u>1?"s":"")+"?")) return;
   try{
@@ -1221,7 +1733,10 @@ function wipe(){
     }
     kill.forEach(function(k){ localStorage.removeItem(k); });
   }catch(e){}
-  S=blank(); save(true); extraBanners=[]; render();
+  var keep={deviceId:S.deviceId, tombs:S.tombs||[], everSignedIn:S.everSignedIn, everSynced:S.everSynced,
+            deviceSpId:S.deviceSpId};   /* same phone, same office row; pending deletes still go */
+  S=blank(); Object.keys(keep).forEach(function(k){ if(keep[k]!==undefined) S[k]=keep[k]; });
+  save(true); extraBanners=[]; render(); SYNC.soon();
 }
 function drawStorage(){
   var n=storageUsed();
@@ -1230,7 +1745,7 @@ function drawStorage(){
     (n===null?"Storage use could not be measured.":
       "Using <b>"+Math.round(n/1024)+" KB</b> on this phone across "+S.trips.length+
       " trip"+(S.trips.length===1?"":"s")+" and "+photos+" photo"+(photos===1?"":"s")+".")+
-    " A phone typically allows about 5 MB, so send and clear regularly."+
+    " A phone typically allows about 5 MB, so clear synced trips now and then."+
     " App build "+BUILD+".";
 }
 
@@ -1238,7 +1753,7 @@ function drawStorage(){
 function drawRecord(){
   /* recordHTML() strips these cards out, so a re-opened batch file has none of them. */
   ["openCard","startCard","noStart","listCard","sendCard","setCard",
-   "installBanner","updatePill"].forEach(function(id){
+   "installBanner","updatePill","syncCard","syncPill"].forEach(function(id){
     var el=$(id); if(el) el.className="hidden";
   });
   $("recCard").className="card";
@@ -1353,6 +1868,13 @@ function render(){
   drawList();
   drawSend();
   drawStorage();
+  drawSync();
+}
+function startSignIn(){
+  var half=draft.proj&&($("startKm").value||$("sNotes").value);
+  if(half&&!confirm("Signing in leaves this page for a moment, and the half-filled trip form will be cleared.\n\nSign in now?")) return;
+  save(true);
+  AUTH.signIn();
 }
 function init(){
   $("buildBadge").textContent="build "+BUILD;
@@ -1361,6 +1883,15 @@ function init(){
 
   probeStorage();
   S=load();
+  if(NEEDS_SAVE){ NEEDS_SAVE=false; save(true); }   /* ids invented by load() are fixed for good, now */
+  /* The installed app and a browser tab share this phone's storage but each keeps its
+     own copy in memory. When the other one saves, take its copy - otherwise this one
+     would later write an old copy back over newer trips (review, 2026-11-12). */
+  window.addEventListener("storage",function(e){
+    if(e.key!==STORE||RECORD) return;
+    S=load(); NEEDS_SAVE=false;
+    render(); SYNC.soon();
+  });
   draft.veh=S.vehicle||"";
   vehOpen=!draft.veh;
   $("driver").value=S.driver||"";
@@ -1373,7 +1904,7 @@ function init(){
   $("endKm").oninput=drawOpenDist;
   $("oNotes").oninput=function(){
     var t=openTrip(); if(!t) return;
-    t.notes=$("oNotes").value; save();
+    t.notes=$("oNotes").value; touch(t); save(); SYNC.soon();
   };
   $("editOpenBtn").onclick=function(){ var t=openTrip(); if(t) editTrip(t.id); };
   $("binOpenBtn").onclick=function(){ var t=openTrip(); if(t) delTrip(t.id); };
@@ -1431,6 +1962,24 @@ function init(){
   render();
   setupApp();
 
+  $("signInBtn").onclick=startSignIn;
+  $("syncNowBtn").onclick=function(){ S.lastSyncErr=""; SYNC.run("button"); };
+  $("signOutBtn").onclick=function(){
+    var n=SYNC.pending();
+    if(!confirm("Sign out of Microsoft on this phone?"+(n?"\n\n"+n+" trip"+(n>1?"s have":" has")+
+      " not reached the office yet and will wait until someone signs in again.":""))) return;
+    AUTH.signOut(); render();
+  };
+  if(HOSTED&&window.crypto&&crypto.subtle){
+    AUTH.start().then(function(fresh){
+      if(fresh&&!(S.driver||"").trim()&&fresh.name){ S.driver=fresh.name; $("driver").value=fresh.name; save(true); }
+    },function(e){
+      banner("bad","Microsoft sign-in did not finish",esc(e.message||String(e)));
+    }).then(function(){ render(); SYNC.run("boot"); });
+    window.addEventListener("online",function(){ SYNC.run("online"); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden) SYNC.run("visible"); });
+    setInterval(function(){ SYNC.run("tick"); },120000);
+  }
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
 else init();
