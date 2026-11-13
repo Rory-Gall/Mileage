@@ -3,416 +3,248 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#12161a" media="(prefers-color-scheme: dark)">
-<meta name="mobile-web-app-capable" content="yes">
+<meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Mileage">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f4c5c">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>KEI - Mileage</title>
 <style>
+/* Build 6 (2026-11-13): Rory - "very, very slick", "most importantly minimal", like the Two-Peg Test.
+   One column, no cards, one button. Same look as the Two-Peg Test app. */
 :root{
-  --bg:#f4f6f8; --panel:#ffffff; --ink:#101418; --ink2:#4a5561; --ink3:#78848f;
-  --line:#d8dee5; --line2:#eaeef2;
-  --accent:#0b6b8a; --accent-ink:#ffffff;
-  --good:#1a7f45; --good-bg:#e4f4ea;
-  --warn:#a86a00; --warn-bg:#fdf0d9;
-  --bad:#b3261e; --bad-bg:#fbe6e4;
-  --shadow:0 1px 2px rgba(16,20,24,.07), 0 4px 14px rgba(16,20,24,.06);
-  --r:12px;
+  --bg:#f2f4f5; --paper:#ffffff; --ink:#14191c; --ink-2:#5b686e; --line:#c3ccd0;
+  --accent:#0f4c5c; --accent-ink:#ffffff;
+  --ok-bg:#c6efce; --ok-ink:#006100; --warn-bg:#ffeb9c; --warn-ink:#9c5700;
+  --bad-bg:#ffc7ce; --bad-ink:#9c0006;
+  --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#12161a; --panel:#1b2127; --ink:#eef2f5; --ink2:#b3bfc9; --ink3:#8494a1;
-    --line:#2e373f; --line2:#242b32;
-    --accent:#3aa8cc; --accent-ink:#08222b;
-    --good:#5fd493; --good-bg:#12321f;
-    --warn:#e8b25a; --warn-bg:#33260d;
-    --bad:#f2867d; --bad-bg:#391916;
-    --shadow:none;
-  }
-}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0d1214; --paper:#151d20; --ink:#e7eef0; --ink-2:#93a3a9; --line:#334247;
+  --accent:#4fb3c9; --accent-ink:#06181d;
+  --ok-bg:#123420; --ok-ink:#7fe3a2; --warn-bg:#3c3113; --warn-ink:#f3cd68;
+  --bad-bg:#40171b; --bad-ink:#ff97a2;
+}}
+@media (prefers-color-scheme:dark){.logo .navy{fill:#ffffff}}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  background:var(--bg); color:var(--ink);
-  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-text-size-adjust:100%;
-  padding:0 0 96px;
-}
-.wrap{max-width:760px;margin:0 auto;padding:0 12px}
-
-header.top{
-  background:var(--panel); border-bottom:1px solid var(--line);
-  padding:10px 0; margin-bottom:12px; position:sticky; top:0; z-index:30;
-}
-header.top .wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.brand{font-weight:700;letter-spacing:.2px;font-size:15px;white-space:nowrap}
-.brand span{color:var(--ink3);font-weight:500}
-.brand .build{
-  font-size:11px;font-weight:700;color:var(--accent);border:1px solid currentColor;
-  border-radius:999px;padding:1px 7px;margin-left:2px;letter-spacing:.02em
-}
-.pill{
-  margin-left:auto;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;
-  background:var(--line2);color:var(--ink3);white-space:nowrap
-}
-.pill.ok{background:var(--good-bg);color:var(--good)}
-.pill.dirty{background:var(--warn-bg);color:var(--warn)}
-.pill.bad{background:var(--bad-bg);color:var(--bad)}
-
-.card{
-  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
-  box-shadow:var(--shadow); padding:14px; margin:0 0 12px;
-}
-.card h2{
-  font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);
-  margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px
-}
-.card h2 .n{
-  background:var(--accent);color:var(--accent-ink);border-radius:5px;
-  min-width:18px;height:18px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;
-  font-size:11px;letter-spacing:0
-}
-.card h2 .pill{font-size:11px}
-.card.live{border-color:var(--accent);border-width:2px}
-
-label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin:0 0 4px}
-input[type=text],input[type=date],select,textarea{
-  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;
-  background:var(--bg);color:var(--ink);font-size:16px;font-family:inherit;
-  font-variant-numeric:tabular-nums
-}
-textarea{min-height:64px;resize:vertical;line-height:1.5}
-select{appearance:none;-webkit-appearance:none}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
-input.warnf{border-color:var(--bad);background:var(--bad-bg)}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-
-.odo{
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:26px;font-weight:700;letter-spacing:.04em;padding:12px;text-align:center
-}
-
-.row{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 10px}
-.row>div{flex:1 1 130px;min-width:110px}
-.row:last-child{margin-bottom:0}
-.f{margin:0 0 12px}
-.f:last-child{margin-bottom:0}
-
-.withbtn{display:flex;gap:6px}
-.withbtn input{flex:1 1 auto;min-width:0}
-.btn{
-  border:1px solid var(--line);background:var(--panel);color:var(--ink);
-  border-radius:9px;padding:11px 13px;font-size:14px;font-weight:600;font-family:inherit;
-  cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent
-}
-.btn:active{transform:translateY(1px)}
-.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.big{width:100%;padding:16px;font-size:17px;border-radius:11px}
-.btn.sm{padding:8px 10px;font-size:13px}
-.btn.danger{color:var(--bad);border-color:var(--bad)}
-.btn[disabled]{opacity:.45;pointer-events:none}
-.btn.cam{padding:11px 14px;font-size:18px;line-height:1}
-
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{
-  border:1px solid var(--line);border-radius:999px;padding:9px 13px;
-  font-size:13px;font-weight:600;color:var(--ink2);background:var(--bg);
-  cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit
-}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--sans);-webkit-text-size-adjust:100%}
+main{max-width:420px;margin:0 auto;padding:22px 18px 40px}
+.top{display:flex;align-items:center;gap:12px}
+.top .logo{flex:0 0 auto}
+.top .t{flex:1 1 auto;min-width:0}
+h1{font-size:24px;margin:0 0 1px}
+.sub{margin:0;color:var(--ink-2);font-size:14px}
+#syncPill{font-size:12px;font-weight:650;padding:3px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--paper);color:var(--ink-2);border:1px solid var(--line)}
+#syncPill.ok{background:var(--ok-bg);color:var(--ok-ink);border-color:transparent}
+#syncPill.dirty{background:var(--warn-bg);color:var(--warn-ink);border-color:transparent}
+#syncPill.bad{background:var(--bad-bg);color:var(--bad-ink);border-color:transparent}
+label,.lab{display:block;font-size:13px;color:var(--ink-2);margin-top:16px}
+input,textarea,select{width:100%;min-width:0;margin-top:3px;padding:10px;font:16px var(--sans);color:var(--ink);
+  background:var(--paper);border:1px solid var(--line);border-radius:6px}
+textarea{resize:vertical;line-height:1.4}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.odo{font:20px var(--mono)}
+.pair{display:flex;gap:12px}
+.pair>div{flex:1 1 0;min-width:0}
+.with{display:flex;gap:6px;margin-top:3px}
+.with input{margin-top:0}
+.cam{flex:0 0 auto;width:46px;font-size:19px;border:1px solid var(--line);background:var(--paper);color:var(--ink);
+  border-radius:6px;cursor:pointer;padding:0}
+.hint{margin:4px 0 0;color:var(--ink-2);font-size:13px}
+.hint a,.links button,a.lk{color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:0;font:inherit;padding:0}
+/* client type-ahead: nothing shows until you type */
+.sugg{margin-top:4px;border:1px solid var(--line);border-radius:6px;background:var(--paper);overflow:hidden}
+.sugg button{display:block;width:100%;text-align:left;padding:11px 12px;font:16px var(--sans);color:var(--ink);
+  background:none;border:0;border-top:1px solid var(--line);cursor:pointer}
+.sugg button:first-child{border-top:0}
+.sugg button:active,.sugg button:focus{background:var(--bg);outline:none}
+.sugg small{color:var(--ink-2)}
+input.picked{border-color:var(--accent);font-weight:650}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:8px 13px;font:600 14px var(--sans);color:var(--ink-2);
+  background:var(--paper);cursor:pointer}
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.chip.ghost{color:var(--accent);border-style:dashed}
-.grouplab{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--ink3);margin:12px 0 6px}
-.grouplab:first-child{margin-top:0}
-
-.hint{font-size:12px;color:var(--ink3);margin:6px 0 0;line-height:1.4}
-.hint b{color:var(--ink2)}
-a.linkish{color:var(--accent);font-weight:600;text-decoration:none;cursor:pointer}
-
-.banner{
-  border-radius:var(--r);padding:12px 14px;margin:0 0 12px;font-size:14px;
-  border:1px solid; line-height:1.45
-}
-.banner.bad{background:var(--bad-bg);color:var(--bad);border-color:currentColor}
-.banner.warn{background:var(--warn-bg);color:var(--warn);border-color:currentColor}
-.banner.ok{background:var(--good-bg);color:var(--good);border-color:currentColor}
-.banner b{display:block;font-weight:700;margin-bottom:3px}
-.banner .btn{margin-top:9px;background:transparent;border-color:currentColor;color:inherit}
-
+.go{display:block;width:100%;margin-top:20px;padding:14px;font:650 17px var(--sans);color:var(--accent-ink);
+  background:var(--accent);border:0;border-radius:8px;cursor:pointer}
+.go:active{transform:translateY(1px)}
+.links{margin:12px 0 0;font-size:14px;color:var(--ink-2)}
+.shot{display:flex;gap:8px;align-items:center;margin-top:6px}
+.shot img{width:84px;height:63px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.shot .meta{font-size:12px;color:var(--ink-2)}
+.shot .btn{font:inherit;font-size:12px;color:var(--bad-ink);background:none;border:0;text-decoration:underline;padding:0;cursor:pointer}
+/* the open trip */
+.card.live{margin-top:18px;padding:14px;border-radius:8px;background:var(--paper);border:2px solid var(--accent)}
+.card.live h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.card.live h2 .n{display:none}
+.card.live .stack{display:flex;gap:16px;margin-top:10px}
+.card.live .stack .btn{font:inherit;font-size:14px;color:var(--accent);background:none;border:0;text-decoration:underline;padding:0;cursor:pointer}
+.card.live .stack .btn.danger{color:var(--bad-ink)}
+.dist{display:flex;align-items:baseline;gap:6px;justify-content:center;margin-top:10px;padding:10px;border-radius:8px;background:var(--bg)}
+.dist .v{font:700 32px/1 var(--mono)} .dist .u{color:var(--ink-2);font-size:14px}
+.dist.bad{background:var(--bad-bg)} .dist.bad .v{color:var(--bad-ink)}
+#noStart.card{margin-top:10px}
+/* waiting + sent */
+.list{margin-top:22px}
+.list h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:0 0 4px}
+.row{display:flex;gap:8px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.row:first-of-type{border-top:0}
+.row .m{flex:1 1 auto;min-width:0}
+.row .k{font:600 14px var(--mono);white-space:nowrap}
+.row .why{display:block;font-size:12px;color:var(--ink-2)}
+.row .why.bad{color:var(--bad-ink)}
+.row .act{white-space:nowrap;font-size:13px}
+.row .act button{font:inherit;color:var(--accent);background:none;border:0;text-decoration:underline;padding:0 0 0 8px;cursor:pointer}
+.row .act button.danger{color:var(--bad-ink)}
+.ok-ink{color:var(--ok-ink)}
+/* banners only when something needs you */
+.banner{margin-top:14px;padding:12px 14px;border-radius:8px;font-size:14px;background:var(--paper);border:1px solid var(--line)}
+.banner b{display:block;margin-bottom:2px}
+.banner.bad{background:var(--bad-bg);color:var(--bad-ink);border-color:transparent}
+.banner.warn{background:var(--warn-bg);color:var(--warn-ink);border-color:transparent}
+.banner.ok{background:var(--ok-bg);color:var(--ok-ink);border-color:transparent}
+.banner .btn{margin-top:8px;font:600 14px var(--sans);padding:7px 12px;border-radius:6px;border:1px solid currentColor;
+  background:transparent;color:inherit;cursor:pointer}
+#installBanner{display:flex;gap:10px;align-items:center}
+#installMsg b{display:inline;margin:0}
+.foot{margin:26px 0 0;font-size:13px;color:var(--ink-2);line-height:1.6}
+.foot .btn{font:inherit;color:var(--accent);background:none;border:0;text-decoration:underline;padding:0;cursor:pointer}
+.foot .go{margin-top:8px;font-size:15px;padding:11px}
 .hidden{display:none !important}
-
-#updatePill{
-  position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:60;
-  background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;
-  padding:13px 20px;font-size:14px;font-weight:600;font-family:inherit;
-  box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer
-}
-#installBanner{display:flex;gap:10px;align-items:center;font-weight:500}
-#installBanner b{display:inline;font-weight:700;margin:0}
-#installBanner .btn{
-  flex:0 0 auto;border-color:currentColor;color:inherit;background:transparent;font-weight:700
-}
-
-.dist{
-  display:flex;align-items:baseline;gap:8px;justify-content:center;
-  background:var(--line2);border-radius:10px;padding:12px;margin:10px 0 0
-}
-.dist .v{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;
-  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-.dist .u{font-size:14px;font-weight:600;color:var(--ink3)}
-.dist.bad{background:var(--bad-bg)} .dist.bad .v{color:var(--bad)}
-
-.shot{margin:8px 0 0;display:flex;gap:8px;align-items:flex-start}
-.shot img{width:112px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
-.shot .meta{font-size:12px;color:var(--ink3);flex:1 1 auto}
-
-.trip{
-  border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin:0 0 8px;
-  background:var(--bg)
-}
-.trip.open{border-color:var(--warn);background:var(--warn-bg)}
-.trip.sent{opacity:.62}
-.trip .l1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-.trip .p{font-size:14px;font-weight:700;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.trip .k{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.trip .l2{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.4}
-.trip .l3{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
-.tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  padding:2px 7px;border-radius:999px;background:var(--line2);color:var(--ink3)}
-.tag.open{background:var(--warn);color:#fff}
-.tag.sent{background:var(--good-bg);color:var(--good)}
-.daylab{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--ink3);margin:14px 0 6px;display:flex;gap:8px;align-items:baseline}
-.daylab:first-child{margin-top:0}
-.daylab .tot{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink2)}
-
-.sum{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 0}
-.sum th,.sum td{padding:7px 8px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:top}
-.sum th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
-.sum td.n,.sum th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.sum tr:last-child td{border-bottom:0}
-.sum tfoot td{font-weight:800;border-top:2px solid var(--line)}
-
-.foot{color:var(--ink3);font-size:12px;text-align:center;margin:22px 0 0;line-height:1.6}
-
-dialog{
-  border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);
-  padding:16px;max-width:520px;width:calc(100% - 28px);box-shadow:var(--shadow)
-}
+#updatePill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;padding:11px 18px;
+  font:650 15px var(--sans);color:var(--accent-ink);background:var(--accent);border:0;border-radius:999px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.25)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);padding:16px;
+  max-width:420px;width:calc(100% - 28px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
-.stack{display:flex;gap:8px;flex-wrap:wrap}
-.stack>*{flex:1 1 130px}
-
-.tag.sok{background:var(--good-bg);color:var(--good)}
-.tag.swait{background:var(--warn-bg);color:var(--warn)}
-.tag.sbad{background:var(--bad-bg);color:var(--bad)}
-header.top .pill+.pill{margin-left:0}
-.syncline{font-size:14px;line-height:1.5}
-.syncline b{font-weight:800}
-.recshots{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0}
-.recshots figure{margin:0;width:230px}
-.recshots img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}
-.recshots figcaption{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.4}
+dialog .row{display:flex;gap:10px;border:0}
+dialog .row>div{flex:1}
+dialog .f{margin-top:10px}
+dialog label{margin-top:0}
+.dlgbtns{display:flex;gap:10px;margin-top:14px}
+.dlgbtns button{flex:1;padding:11px;font:600 15px var(--sans);border-radius:8px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink);cursor:pointer}
+.dlgbtns .pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+#pill{display:none}
 </style>
 </head>
 <body>
-
+<main>
 <header class="top">
-  <div class="wrap">
-    <span class="brand">KEI <span>/ Mileage</span> <span class="build" id="buildBadge">build 1</span></span>
-    <span class="pill" id="pill">Ready</span>
-    <span class="pill" id="syncPill">&nbsp;</span>
-  </div>
+<svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 439.44 450" width="45" height="46" role="img" aria-label="Kootenay Environmental Innovations logo"><g><path fill="#f4b518" d="M439.36,358.77v80.21c-42.66-42.64-84.93-84.88-127.21-127.14-15.37,15.46-30.55,30.73-45.96,46.23-31.06-31.18-61.61-61.86-92.29-92.66C115.94,323.47,58.35,381.16,.75,438.85c-.2-.13-.4-.25-.6-.38v-80.06c57.99-58.07,115.77-115.95,173.71-173.97,30.47,30.53,61.01,61.15,91.67,91.87,15.42-15.54,30.59-30.83,45.63-45.99,42.84,42.93,85.24,85.41,128.19,128.45Z"/><path fill="#e61b25" d="M0,253.98v-79.79C58.08,116,115.85,58.12,173.86,0c30.56,30.64,61.12,61.29,91.85,92.1,15.32-15.46,30.49-30.76,45.58-45.99,42.82,42.96,85.23,85.51,128.14,128.57v79.33l-.41,.31c-42.3-42.28-84.6-84.55-127.05-126.97-15.28,15.39-30.48,30.7-45.88,46.22-31.06-31.02-61.7-61.63-92.61-92.5C115.73,138.98,58.16,196.69,.59,254.4c-.2-.14-.39-.28-.59-.42Z"/><path fill="#ec7722" d="M439.38,266.69v79.44c-.15,.09-.29,.18-.44,.27-42.27-42.23-84.54-84.47-126.94-126.83-15.37,15.44-30.56,30.72-45.88,46.11-30.91-31-61.49-61.65-92.06-92.31C116.09,231.46,58.48,289.19,.88,346.92c-.24-.17-.48-.34-.73-.51v-80.52c57.79-57.92,115.53-115.8,173.5-173.89,30.64,30.76,61.19,61.42,91.72,92.07,15.49-15.55,30.69-30.8,45.72-45.9,42.91,42.99,85.35,85.5,128.29,128.51Z"/><path fill="#02374b" class="navy" d="M342.58,383.33c-1.53,9.85-3.06,19.7-4.58,29.55,.15,.11,.3,.22,.45,.33,11.02-10.15,22.03-20.29,32.94-30.34,22.44,22.51,44.81,44.94,66.93,67.12H185.05c42.08-42.17,84.08-84.26,126.41-126.69-4.14,13.2-8.17,26.03-12.34,39.3,9.7-1.94,18.96-3.8,28.87-5.78-14.03,24.89-27.75,49.25-41.48,73.61,.14,.14,.28,.29,.42,.43,18.37-15.94,36.75-31.88,55.12-47.83,.17,.1,.34,.19,.52,.29Z"/><path fill="#02374c" class="navy" d="M204.7,335.23c.02-.11,.04-.22,.01-.06,.13-.09,.04-.03-.05,.03,0,0,.04,.03,.04,.03Z"/><g><path fill="#02374c" class="navy" d="M161.98,416.83c-.12-.14-.24-.29-.36-.43,.38-.79,.73-1.59,1.15-2.37,6.02-11.23,12.05-22.46,18.06-33.7,6.11-11.41,12.21-22.82,18.28-34.24,1.9-3.58,3.69-7.22,5.53-10.83-.53,.25-1.12,.42-1.56,.77-14.47,11.62-28.91,23.26-43.37,34.89-2.25,1.81-4.54,3.58-7.31,5.77,1.4-10.41,2.73-20.2,4.1-30.41-17.18,14.18-34.03,28.1-50.89,42.03-.16-.15-.32-.3-.48-.44,14.25-21.83,28.49-43.66,42.83-65.63,6.89,4.37,13.45,8.52,20.35,12.89,1.74-19.64,3.43-38.79,5.14-58.11C115.7,334.85,58.29,392.37,.97,449.8H172.91c21.74-21.76,43.18-43.23,64.65-64.73-25.16,10.57-50.37,21.16-75.58,31.75Zm-72.92,17.75l-9.12-13.22-1.9,2.39v10.83h-8.05v-34.15h8.05v13.56l10.29-13.56h8.73l-11.76,15.27,13.32,18.88h-9.56Zm33.85-28h-12.73v7.66h11.71v6.1h-11.71v7.95h12.73v6.29h-21.27v-34.15h21.27v6.15Zm21.35-.05h-4.39v21.9h4.39v6.15h-17.27v-6.15h4.34v-21.9h-4.34v-6.1h17.27v6.1Z"/><path fill="#02374c" class="navy" d="M204.66,335.2s-.02,.04-.03,.06c.02-.01,.04-.02,.07-.03l-.04-.03Z"/></g></g></svg>
+<div class="t"><h1>Mileage</h1>
+<p class="sub">Trips go to the office by themselves.</p></div>
+<span id="syncPill">&nbsp;</span>
 </header>
+<span id="pill"></span>
 
-<div class="wrap">
-
-  <div class="banner warn hidden" id="installBanner">
-    <div id="installMsg" style="flex:1 1 auto"></div>
-    <button class="btn sm hidden" id="installBtn" type="button">Install</button>
-  </div>
-
-  <div id="banners"></div>
-
-  <div id="recCard" class="card hidden">
-    <h2>Mileage batch &mdash; sent from a phone</h2>
-    <div id="recMeta"></div>
-    <table class="sum" id="recTable"></table>
-    <div class="recshots" id="recShots"></div>
-    <p class="hint">This file lives in <b>_Shared Files to Sort (Keep this folder Clean)</b>.
-      At the computer, run the bat in <b>HTML to CSV Mileage Code</b> there &mdash; it files the
-      trips into the log and invoicing, then archives this file.</p>
-  </div>
-
-  <div id="openCard" class="card live hidden">
-    <h2><span class="n">&#9679;</span> Trip in progress</h2>
-    <div id="openHead"></div>
-
-    <div class="f" style="margin-top:12px">
-      <label for="oNotes">Sites / notes</label>
-      <textarea id="oNotes" placeholder="Where you went"></textarea>
-    </div>
-
-    <div class="f">
-      <label for="endKm" id="endKmLab">End odometer (km)</label>
-      <div class="withbtn">
-        <input type="text" id="endKm" class="odo" inputmode="decimal" placeholder="000000">
-        <button class="btn cam" id="endCamBtn" title="Photo of the odometer">&#128247;</button>
-      </div>
-      <input type="file" id="endCam" accept="image/*" class="hidden">
-      <div class="shot hidden" id="endShot"></div>
-    </div>
-
-    <div class="dist" id="oDist"><span class="v">&mdash;</span><span class="u">km</span></div>
-    <p class="hint" id="oDistHint"></p>
-
-    <div class="f" style="margin-top:12px">
-      <button class="btn pri big" id="endBtn">End trip</button>
-    </div>
-    <div class="stack" style="margin-top:8px">
-      <button class="btn sm" id="editOpenBtn">Edit trip details</button>
-      <button class="btn sm danger" id="binOpenBtn">Discard trip</button>
-    </div>
-  </div>
-
-  <div id="noStart" class="hidden">
-    <p class="hint">Finish the trip above before starting another &mdash; one open trip at a
-      time is what keeps an unclosed one from being buried.</p>
-  </div>
-
-  <div id="startCard" class="card">
-    <h2><span class="n">1</span> Start a trip</h2>
-
-    <div class="f">
-      <label>Client / project</label>
-      <div id="projChips"></div>
-      <p class="hint" id="oldHint"><a class="linkish" id="oldToggle">Show older programs</a></p>
-    </div>
-
-    <div class="f">
-      <label>Vehicle</label>
-      <div class="chips" id="vehChips"></div>
-    </div>
-
-    <div class="f">
-      <label for="sNotes">Sites / notes</label>
-      <textarea id="sNotes" placeholder="e.g. Selous and Anderson"></textarea>
-    </div>
-
-    <div class="f">
-      <label for="startKm" id="startKmLab">Start odometer (km)</label>
-      <div class="withbtn">
-        <input type="text" id="startKm" class="odo" inputmode="decimal" placeholder="000000">
-        <button class="btn cam" id="startCamBtn" title="Photo of the odometer">&#128247;</button>
-      </div>
-      <input type="file" id="startCam" accept="image/*" class="hidden">
-      <div class="shot hidden" id="startShot"></div>
-      <p class="hint" id="lastKmHint"></p>
-    </div>
-
-    <div class="f">
-      <label for="sEndKm">End odometer (km)</label>
-      <div class="withbtn">
-        <input type="text" id="sEndKm" class="odo" inputmode="decimal" placeholder="000000">
-        <button class="btn cam" id="sEndCamBtn" title="Photo of the odometer">&#128247;</button>
-      </div>
-      <input type="file" id="sEndCam" accept="image/*" class="hidden">
-      <div class="shot hidden" id="sEndShot"></div>
-      <p class="hint">Still driving? Leave this blank and add it when you park.</p>
-    </div>
-
-    <div class="row">
-      <div>
-        <label for="sDate">Date (YYYY-MM-DD)</label>
-        <input type="text" id="sDate" class="mono" inputmode="numeric" placeholder="2026-01-31">
-      </div>
-    </div>
-
-    <button class="btn pri big" id="startBtn" style="margin-top:12px">Start trip</button>
-    <p class="hint">Saved on the phone the moment you press this. A trip whose end is blank
-      stays open at the top of the page until you add the reading.</p>
-  </div>
-
-  <div class="card" id="listCard">
-    <h2><span class="n">2</span> Trips on this phone <span class="pill" id="cnt"></span></h2>
-    <div id="list"></div>
-  </div>
-
-  <div class="card" id="syncCard">
-    <h2><span class="n">3</span> Sync to the office</h2>
-    <div class="syncline" id="syncState"></div>
-    <div class="stack" style="margin-top:10px">
-      <button class="btn pri" id="signInBtn" type="button">Sign in with Microsoft</button>
-      <button class="btn" id="syncNowBtn" type="button">Sync now</button>
-      <button class="btn sm" id="signOutBtn" type="button">Sign out</button>
-    </div>
-    <p class="hint">Once you are signed in, trips go to the office by themselves whenever this
-      app is open and the phone has signal &mdash; nothing to press. Each trip shows
-      <b>Synced</b> only after the office copy has been read back and matches.</p>
-  </div>
-
-  <div class="card" id="sendCard">
-    <h2><span class="n">4</span> Send a file (backup)</h2>
-    <div id="sendSummary"></div>
-    <div class="f" style="margin-top:10px">
-      <label style="display:flex;align-items:center;gap:8px;font-weight:600">
-        <input type="checkbox" id="incPhotos" checked style="width:auto;margin:0">
-        <span>Include odometer photos</span></label>
-    </div>
-    <button class="btn pri big" id="sendBtn">Send unsent trips</button>
-    <div class="stack" style="margin-top:8px">
-      <button class="btn sm" id="csvBtn">Download CSV backup</button>
-      <button class="btn sm" id="sendAllBtn">Re-send everything</button>
-    </div>
-    <p class="hint" id="sendHint">Sends one file to the OneDrive app &mdash;
-      <b>KEI Shared &rsaquo; _Shared Files to Sort (Keep this folder Clean)</b> &mdash; same place as the field sheets.
-      If sharing is not offered it lands in Downloads and you can move it when you are back in signal.</p>
-  </div>
-
-  <div class="card" id="setCard">
-    <h2><span class="n">5</span> This phone</h2>
-    <div class="row">
-      <div>
-        <label for="driver">Driver</label>
-        <input type="text" id="driver" placeholder="Your name">
-      </div>
-    </div>
-    <p class="hint" id="storeHint"></p>
-    <div class="stack" style="margin-top:10px">
-      <button class="btn sm" id="purgeBtn">Clear synced trips</button>
-      <button class="btn sm danger" id="wipeBtn">Erase everything</button>
-    </div>
-  </div>
-
-  <p class="foot">
-    Kootenay Environmental Innovations<br>
-    Slow is Smooth, &amp; Smooth is Fast
-  </p>
+<div class="banner warn hidden" id="installBanner">
+  <div id="installMsg" style="flex:1 1 auto"></div>
+  <button class="btn hidden" id="installBtn" type="button">Install</button>
 </div>
+<div id="banners"></div>
+
+<!-- the trip in progress: only when there is one -->
+<section id="openCard" class="card live hidden">
+  <h2><span class="n">&#9679;</span> Trip in progress</h2>
+  <div id="openHead"></div>
+  <label for="oNotes">Where you went</label>
+  <textarea id="oNotes" rows="2"></textarea>
+  <label for="endKm">End odometer (km)</label>
+  <div class="with">
+    <input type="text" id="endKm" class="odo" inputmode="decimal" placeholder="000000" autocomplete="off">
+    <button class="cam" id="endCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
+  </div>
+  <input type="file" id="endCam" accept="image/*" class="hidden">
+  <div class="shot hidden" id="endShot"></div>
+  <div class="dist" id="oDist"><span class="v">&mdash;</span><span class="u">km</span></div>
+  <p class="hint" id="oDistHint"></p>
+  <button class="go" id="endBtn" type="button">End trip</button>
+  <div class="stack">
+    <button class="btn" id="editOpenBtn" type="button">Edit trip</button>
+    <button class="btn danger" id="binOpenBtn" type="button">Discard trip</button>
+  </div>
+</section>
+<div id="noStart" class="hidden"></div>
+
+<!-- a new trip -->
+<section id="startCard">
+  <label for="sProj">Client</label>
+  <input type="text" id="sProj" placeholder="Start typing &mdash; CoN, LLC, SIFCo&hellip;" autocomplete="off"
+         autocapitalize="off" spellcheck="false" enterkeyhint="next">
+  <div class="sugg hidden" id="projList"></div>
+
+  <span class="lab">Vehicle</span>
+  <div class="chips" id="vehChips"></div>
+
+  <label for="sNotes">Where</label>
+  <textarea id="sNotes" rows="1" placeholder="e.g. Selous and Anderson"></textarea>
+
+  <div class="pair">
+    <div>
+      <label for="startKm">Start km</label>
+      <div class="with">
+        <input type="text" id="startKm" class="odo" inputmode="decimal" placeholder="000000" autocomplete="off">
+        <button class="cam" id="startCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
+      </div>
+    </div>
+    <div>
+      <label for="sEndKm">End km</label>
+      <div class="with">
+        <input type="text" id="sEndKm" class="odo" inputmode="decimal" placeholder="later" autocomplete="off">
+        <button class="cam" id="sEndCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="startCam" accept="image/*" class="hidden">
+  <input type="file" id="sEndCam" accept="image/*" class="hidden">
+  <div class="shot hidden" id="startShot"></div>
+  <div class="shot hidden" id="sEndShot"></div>
+  <p class="hint" id="lastKmHint"></p>
+
+  <p class="hint" id="dateLine"></p>
+  <input type="text" id="sDate" class="hidden" inputmode="numeric" placeholder="yyyy-mm-dd" maxlength="10" autocomplete="off">
+
+  <button class="go" id="startBtn" type="button">Start trip</button>
+</section>
+
+<section class="list hidden" id="waitBox">
+  <h3>Waiting to send</h3>
+  <div id="waitList"></div>
+</section>
+<section class="list hidden" id="recentBox">
+  <h3>Sent to the office</h3>
+  <div id="recent"></div>
+</section>
+
+<footer class="foot">
+  <div id="syncState"></div>
+  <button class="go" id="signInBtn" type="button">Sign in with Microsoft</button>
+  <div class="links">
+    <button class="btn" id="syncNowBtn" type="button">Sync now</button>
+    &middot; <button class="btn" id="signOutBtn" type="button">Sign out</button>
+  </div>
+  <div style="margin-top:10px">Kootenay Environmental Innovations &middot; <span id="buildBadge">build</span></div>
+</footer>
+</main>
 
 <button id="updatePill" class="hidden" type="button">Updated &mdash; tap to reload</button>
 
 <dialog id="dlg">
-  <h3 style="margin:0 0 12px;font-size:15px" id="dlgTitle">Edit trip</h3>
+  <h3 style="margin:0 0 6px;font-size:16px" id="dlgTitle">Edit trip</h3>
   <div id="dlgBody"></div>
-  <div class="stack" style="margin-top:14px">
-    <button class="btn" id="dlgCancel">Cancel</button>
-    <button class="btn pri" id="dlgOk">Save</button>
+  <div class="dlgbtns">
+    <button id="dlgCancel" type="button">Cancel</button>
+    <button class="pri" id="dlgOk" type="button">Save</button>
   </div>
 </dialog>
 
 <script>
 "use strict";
-var BAKED=null;/*BAKEDCFG*/
-
-/* ------------------------------------------------------------------ build
-   Bump BUILD and the filename together on every handover, so a phone can be
-   checked against the file it came from without opening a file browser. */
-var BUILD="5";
+/* Build 6. Bump BUILD and sw.js's CACHE together on every release (deploy.ps1 refuses otherwise). */
+var BUILD="6";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -460,16 +292,12 @@ var PHOTO_QUALITY=0.6;
 var STORE_WARN=2500000;       /* shout well before the ~5 MB localStorage wall */
 
 var $=function(id){ return document.getElementById(id); };
-var RECORD=!!BAKED;           /* this file is a sent batch, not the working app */
+var RECORD=false;             /* build 6 has no sent-file view; kept so shared code reads the same */
 var S=null;
 var storageOK=true, storageErr="";
 var draft={proj:"", veh:"", photo:null, endPhoto:null};
-/* Picking a project or vehicle collapses that section to just the selection
-   (Rory, 2026-09-01) - the start card stays one screen tall. Tapping the
-   selection or "Change" reopens the full list. */
-var projOpen=true, vehOpen=true;
 var endPhoto=null;
-var showOld=false;
+var dateOpen=false;
 
 /* ================================================================ OFFICE SYNC
    Build 5 (2026-11-12). Trips go to the SharePoint list "Mileage Trips" on the
@@ -724,7 +552,7 @@ var SYNC=(function(){
     var ps=t.hasStartPhoto?getPhoto(t.id,"start"):null, pe=t.hasEndPhoto?getPhoto(t.id,"end"):null;
     return Promise.all([sha(ps),sha(pe)]).then(function(h){
       var sent=t.pSent||{};
-      var f={Title:tid,TripId:tid,TripDate:t.date,Driver:(t.driver||S.driver||"").trim(),
+      var f={Title:tid,TripId:tid,TripDate:t.date,Driver:(t.driver||S.driver||((AUTH.who()||{}).name)||"").trim(),
         Vehicle:t.vehicle,Project:t.project,Notes:t.notes||"",StartKm:t.start_km,
         EndKm:(t.end_km===undefined?null:t.end_km),
         State:(t.end_km===null||t.end_km===undefined)?"open":"closed",
@@ -744,6 +572,8 @@ var SYNC=(function(){
         t2.pSent={start:h[0],end:h[1]};
         if((t2.rev||1)===rev){ t2.syncRev=rev; t2.syncErr=""; t2.syncAt=nowISO(); t2.syncTries=0; }
         else again=true;                                /* edited while sending: go again */
+        /* build 6: confirmed AND closed -> nothing left to do on the phone */
+        if(t2.syncRev===rev&&t2.end_km!==null&&t2.end_km!==undefined) retire(t2);
         save(true);
       },function(e){
         var t2=(S===runS)?findTrip(id):null;
@@ -778,7 +608,7 @@ var SYNC=(function(){
   function heartbeat(){
     var who=AUTH.who()||{}, runS=S;
     var open=S.trips.filter(function(t){ return t.end_km===null||t.end_km===undefined; }).length;
-    var f={Title:S.deviceId,DeviceId:S.deviceId,Driver:(S.driver||"").trim(),SignedInAs:who.email||"",
+    var f={Title:S.deviceId,DeviceId:S.deviceId,Driver:(S.driver||who.name||"").trim(),SignedInAs:who.email||"",
       AppBuild:BUILD,Platform:platform(),LastSync:nowISO(),Pending:pending(),OpenTrips:open};
     return upsert(MS.devices,"DeviceId",S.deviceId,S.deviceSpId,f,{DeviceId:S.deviceId,LastSync:f.LastSync})
       .then(function(id){ if(S!==runS) return; S.deviceSpId=id; S.lastBeat=Date.now(); S.beatErr=""; save(true); },
@@ -863,44 +693,57 @@ var SYNC=(function(){
           state:function(){ return last; }, busy:function(){ return busy; }};
 })();
 
+/* A trip the office has confirmed (read back, at its latest edit) and that is closed has nothing
+   left to do on the phone, so it comes off it (Rory, 2026-11-13: "once a trip is synced onto the
+   website, I want it to automatically come off this phone"). What stays: the vehicle's last reading
+   (for the start-km hint) and a short "Sent to the office" line. Open trips stay until closed. */
+function retire(t){
+  S.lastKm=S.lastKm||{};
+  if(t.end_km!==null&&t.end_km!==undefined&&t.start_km>0) S.lastKm[t.vehicle]={km:t.end_km,date:t.date};
+  S.recent=Array.isArray(S.recent)?S.recent:[];
+  S.recent.unshift({date:t.date,project:t.project,vehicle:t.vehicle,km:tripKm(t),at:nowISO()});
+  S.recent=S.recent.slice(0,5);
+  dropPhoto(t.id,"start"); dropPhoto(t.id,"end");
+  S.trips=S.trips.filter(function(x){ return x.id!==t.id; });
+}
+function retireSynced(){
+  /* a build-5 phone may still hold trips the office already has */
+  S.trips.filter(function(t){ return (t.syncRev||0)>0&&!SYNC.needs(t)&&t.end_km!==null&&t.end_km!==undefined; })
+    .forEach(retire);
+}
+
 function drawSync(){
   if(!$("syncState")) return;
   var n=SYNC.pending(), st=SYNC.state(), who=AUTH.signedIn()?AUTH.who():null;
   var sp=$("syncPill"), line="";
   if(!HOSTED){
     line="Syncing works only in the installed app, not in a copied file.";
-    sp.textContent="No sync"; sp.className="pill";
+    sp.textContent="No sync"; sp.className="";
   }else if(!who){
-    line="<b>Not signed in.</b> "+(n?n+" trip"+(n>1?"s are":" is")+" waiting to reach the office.":"Sign in once and trips go to the office by themselves.");
-    sp.textContent=n?n+" not synced":"Sign in"; sp.className="pill"+(n?" bad":"");
+    line=n?n+" trip"+(n>1?"s are":" is")+" waiting to reach the office.":"Sign in once and trips go to the office by themselves.";
+    sp.textContent=n?n+" not synced":"Sign in"; sp.className=n?"bad":"";
   }else if(st.state==="syncing"){
-    line="Syncing&hellip;"; sp.textContent="Syncing"; sp.className="pill dirty";
+    line="Sending&hellip;"; sp.textContent="Syncing"; sp.className="dirty";
   }else if(!navigator.onLine||st.state==="offline"){
-    line="<b>No signal.</b> "+(n?n+" trip"+(n>1?"s":"")+" will go the moment there is.":"Everything is already at the office.");
-    sp.textContent=n?n+" waiting":"Synced"; sp.className="pill"+(n?" dirty":" ok");
+    line=n?"No signal &mdash; "+n+" trip"+(n>1?"s":"")+" will go the moment there is.":"No signal &mdash; nothing waiting.";
+    sp.textContent=n?n+" waiting":"Synced"; sp.className=n?"dirty":"ok";
   }else if(S.lastSyncErr){
-    line="<b>Sync problem:</b> "+esc(S.lastSyncErr);
-    sp.textContent="Sync problem"; sp.className="pill bad";
+    line="Sync problem: "+esc(S.lastSyncErr);
+    sp.textContent="Sync problem"; sp.className="bad";
   }else if(n){
-    line=n+" trip"+(n>1?"s":"")+" waiting to sync."; sp.textContent=n+" waiting"; sp.className="pill dirty";
+    line=n+" trip"+(n>1?"s":"")+" waiting to sync."; sp.textContent=n+" waiting"; sp.className="dirty";
   }else{
-    line="<b>Everything is at the office.</b>"; sp.textContent="Synced"; sp.className="pill ok";
+    line="Everything is at the office."; sp.textContent="Synced"; sp.className="ok";
   }
-  if(who) line+='<br><span class="hint">Signed in as '+esc(who.email||who.name)+
-    (S.lastSync?' &middot; last sync '+esc(S.lastSync.slice(0,16).replace("T"," ")):"")+'</span>';
+  if(who) line+='<br>Signed in as '+esc(who.email||who.name)+
+    (S.lastSync?' &middot; last sync '+esc(S.lastSync.slice(11,16)):"");
   $("syncState").innerHTML=line;
   $("signInBtn").classList.toggle("hidden",!!who||!HOSTED);
   $("syncNowBtn").classList.toggle("hidden",!who);
   $("signOutBtn").classList.toggle("hidden",!who);
-}
-function syncTag(t){
-  if(!HOSTED) return "";
-  if(!SYNC.needs(t)) return '<span class="tag sok">Synced</span>';
-  if(t.syncErr&&AUTH.signedIn()) return '<span class="tag sbad" title="'+esc(t.syncErr)+'">Sync failed</span>';
-  return '<span class="tag swait">Not synced</span>';
+  $("syncNowBtn").parentNode.classList.toggle("hidden",!who);
 }
 function touch(t){ t.rev=(t.rev||1)+1; }
-
 
 /* ---------------------------------------------------------------- utilities */
 function todayISO(){
@@ -1076,15 +919,6 @@ function drawBanners(){
       ' no end odometer</b>'+names+'<br><br>An open trip cannot be invoiced - the office refuses to '+
       'bill a trip of unknown length. Read the odometer, or enter your best estimate and say so in '+
       'the notes.</div>');
-  }else if(open.length){
-    out.push('<div class="banner warn"><b>Trip in progress</b>'+
-      open[0].project+' - started at '+fmtKm(open[0].start_km)+' km. '+
-      'Add the end odometer before you forget.</div>');
-  }
-  if(S&&!(S.driver||"").trim()){
-    out.push('<div class="banner warn"><b>Set your name once</b>'+
-      'Fill in <b>Driver</b> at the bottom of this page so the office knows whose vehicle '+
-      'the trips are in.</div>');
   }
   if(S&&HOSTED&&!RECORD){
     var waiting=SYNC.pending();
@@ -1101,8 +935,8 @@ function drawBanners(){
   if(used!==null&&used>STORE_WARN){
     out.push('<div class="banner warn"><b>This phone is nearly full</b>'+
       'The mileage app is using '+Math.round(used/1024)+' KB and a phone usually allows about '+
-      '5 MB. Tap <b>Clear synced trips</b> at the bottom &mdash; otherwise '+
-      'the next odometer photo will not save.</div>');
+      '5 MB. Sign in and let your trips send - they come off the phone once the office has them. '+
+      'Until then the next odometer photo may not save.</div>');
   }
   for(var i=0;i<extraBanners.length;i++){
     var b=extraBanners[i];
@@ -1155,95 +989,110 @@ function showShot(el,dataURL,label,onClear){
   el.querySelector("button").onclick=onClear;
 }
 
-/* ---------------------------------------------------------------- chips */
-function drawProjects(){
-  var host=$("projChips");
-  if(draft.proj&&!projOpen){
-    host.innerHTML='<div class="chips">'+
-      '<button type="button" class="chip on">'+esc(draft.proj)+'</button>'+
-      '<button type="button" class="chip ghost">Change</button></div>';
-    Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
-      b.onclick=function(){ projOpen=true; drawProjects(); };
-    });
-    $("oldHint").className="hint hidden";
-    return;
-  }
-  $("oldHint").className="hint";
-  var groups=[["client","Client work"],["kei","KEI / non-billable"]];
-  if(showOld) groups.push(["old","Older programs"]);
-  var html="";
-  groups.forEach(function(g){
-    html+='<div class="grouplab">'+g[1]+'</div><div class="chips">';
-    PROJECTS.filter(function(p){ return p.g===g[0]; }).forEach(function(p){
-      html+='<button type="button" class="chip'+(draft.proj===p.p?" on":"")+
-            '" data-p="'+esc(p.p)+'">'+esc(p.p)+'</button>';
-    });
-    html+='</div>';
-  });
-  host.innerHTML=html;
-  Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
-    b.onclick=function(){
-      var p=b.getAttribute("data-p");
-      if(draft.proj===p){ draft.proj=""; }          /* tap the lit chip = clear, stay open */
-      else { draft.proj=p; projOpen=false; }        /* pick = collapse */
-      drawProjects();
-    };
-  });
-  $("oldToggle").textContent=showOld?"Hide older programs":"Show older programs";
+/* ---------------------------------------------------------------- client type-ahead
+   Nothing to scroll past: an empty box, and the matching projects appear as you type.
+   The trip can only take a project picked from the list - the exact string the
+   invoicing prices by (a near-miss would price at the default rate). */
+function norm(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]/g,""); }
+function matches(q){
+  var n=norm(q); if(!n) return [];
+  var rank={client:0,kei:1,old:2};
+  return PROJECTS.map(function(p){
+    var k=norm(p.p), code=norm(p.p.split("_")[0]);
+    var score=(code.indexOf(n)===0?0:(k.indexOf(n)===0?1:(k.indexOf(n)>=0?2:-1)));
+    return {p:p, score:score};
+  }).filter(function(x){ return x.score>=0; })
+    .sort(function(a,b){ return (a.score-b.score)||(rank[a.p.g]-rank[b.p.g])||a.p.p.localeCompare(b.p.p); })
+    .slice(0,8).map(function(x){ return x.p; });
 }
+function drawSuggestions(){
+  var box=$("projList"), q=$("sProj").value;
+  if(draft.proj&&q===draft.proj){ box.classList.add("hidden"); $("sProj").classList.add("picked"); return; }
+  $("sProj").classList.remove("picked");
+  var list=matches(q);
+  if(!q.trim()){ box.classList.add("hidden"); box.innerHTML=""; return; }
+  if(!list.length){
+    box.innerHTML='<button type="button" disabled><small>No client matches &ldquo;'+esc(q)+'&rdquo;</small></button>';
+    box.classList.remove("hidden"); return;
+  }
+  box.innerHTML=list.map(function(p){
+    return '<button type="button" data-p="'+esc(p.p)+'">'+esc(p.p)+(p.g==="old"?' <small>(older)</small>':"")+'</button>';
+  }).join("");
+  box.classList.remove("hidden");
+  Array.prototype.forEach.call(box.querySelectorAll("button[data-p]"),function(b){
+    /* mousedown/touch fires before the box loses focus, so the pick is never lost to a blur */
+    b.onmousedown=function(e){ e.preventDefault(); };
+    b.onclick=function(){ pickProject(b.getAttribute("data-p")); };
+  });
+}
+function pickProject(p){
+  draft.proj=p; $("sProj").value=p;
+  drawSuggestions(); drawVehicles(); drawLastKm();
+  if(!draft.veh) return;
+  $("sNotes").focus();
+}
+
+/* ---------------------------------------------------------------- vehicle */
 function drawVehicles(){
   var host=$("vehChips");
-  if(draft.veh&&!vehOpen){
-    host.innerHTML='<div class="chips">'+
-      '<button type="button" class="chip on">'+esc(draft.veh)+'</button>'+
-      '<button type="button" class="chip ghost">Change</button></div>';
-    Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
-      b.onclick=function(){ vehOpen=true; drawVehicles(); };
-    });
-    return;
-  }
   host.innerHTML=VEHICLES.map(function(v){
-    return '<button type="button" class="chip'+(draft.veh===v?" on":"")+
-           '" data-v="'+esc(v)+'">'+esc(v)+'</button>';
+    return '<button type="button" class="chip'+(draft.veh===v?" on":"")+'" data-v="'+esc(v)+'">'+esc(v)+'</button>';
   }).join("");
   Array.prototype.forEach.call(host.querySelectorAll(".chip"),function(b){
     b.onclick=function(){
       draft.veh=b.getAttribute("data-v");
       S.vehicle=draft.veh; save();
-      vehOpen=false;
       drawVehicles(); drawLastKm();
     };
   });
 }
+
 /* ---------------------------------------------------------------- start trip */
-function drawLastKm(){
-  var hint=$("lastKmHint");
-  var veh=draft.veh;
-  if(!veh){ hint.innerHTML="Pick a vehicle and the last reading logged for it shows up here."; return; }
-  var last=null;
+function lastReading(veh){
+  var best=(S.lastKm||{})[veh]||null;
   for(var i=S.trips.length-1;i>=0;i--){
     var t=S.trips[i];
-    if(t.vehicle===veh&&t.mode==="odo"&&t.end_km!==null&&t.end_km!==undefined){ last=t; break; }
+    if(t.vehicle===veh&&t.end_km!==null&&t.end_km!==undefined&&t.start_km>0&&(!best||t.date>=best.date)){
+      best={km:t.end_km,date:t.date}; break;
+    }
   }
-  if(!last){ hint.innerHTML="No previous reading for the <b>"+esc(veh)+"</b> on this phone."; return; }
-  hint.innerHTML='Last logged reading for the <b>'+esc(veh)+'</b> was <b>'+fmtKm(last.end_km)+
-    ' km</b> on '+dayName(last.date)+'. <a class="linkish" id="useLast">Use it</a> '+
-    '&mdash; but read the dash if the vehicle has been driven since.';
-  var a=$("useLast");
-  if(a) a.onclick=function(){ $("startKm").value=String(last.end_km); };
+  return best;
+}
+function drawLastKm(){
+  var hint=$("lastKmHint"), last=draft.veh?lastReading(draft.veh):null;
+  if(!last){ hint.innerHTML=""; return; }
+  hint.innerHTML='Last reading for the '+esc(draft.veh)+': '+fmtKm(last.km)+' km ('+esc(dayName(last.date))+
+    ') &middot; <a id="useLast">use it</a>';
+  $("useLast").onclick=function(){ $("startKm").value=String(last.km); };
+}
+function drawDate(){
+  var d=$("sDate").value||todayISO();
+  var today=(d===todayISO());
+  $("dateLine").innerHTML=(today?"Today, "+esc(dayName(d)):'<b>'+esc(dayName(d))+' ('+esc(d)+')</b>')+
+    ' &middot; <a id="dateChange">'+(dateOpen?"done":"change date")+'</a>';
+  $("sDate").classList.toggle("hidden",!dateOpen);
+  $("dateChange").onclick=function(){
+    if(dateOpen&&!validDate($("sDate").value)){ alert("The date has to be YYYY-MM-DD, e.g. "+todayISO()+"."); return; }
+    dateOpen=!dateOpen; drawDate(); if(dateOpen) $("sDate").focus();
+  };
 }
 function syncStartBtn(){
-  /* both readings in -> the trip is complete the moment it is saved */
   var done=num($("sEndKm").value)!==null;
   $("startBtn").textContent=done?"Log trip":"Start trip";
 }
 function startTrip(){
   var kmv=num($("startKm").value);
   var env=num($("sEndKm").value);
+  var typed=$("sProj").value.trim();
+  if(!draft.proj||draft.proj!==typed){
+    /* typed exactly, without tapping the suggestion, still counts */
+    var exact=PROJECTS.filter(function(p){ return p.p.toLowerCase()===typed.toLowerCase(); })[0];
+    draft.proj=exact?exact.p:"";
+  }
   var problems=[];
-  if(!draft.proj) problems.push("Pick the client or project this trip is for.");
+  if(!draft.proj) problems.push("Pick the client from the list that appears as you type.");
   if(!draft.veh)  problems.push("Pick the vehicle.");
-  if(kmv===null) problems.push("Enter the start odometer reading, or photograph it and type what it says. A vehicle with no odometer: enter 0 here and the trip distance as the end reading.");
+  if(kmv===null) problems.push("Enter the start odometer reading. A vehicle with no odometer: enter 0 here and the trip distance as the end reading.");
   else if(isNaN(kmv)) problems.push("The start odometer is not a number.");
   else if(kmv<0) problems.push("An odometer reading cannot be negative.");
   if(env!==null){
@@ -1256,17 +1105,18 @@ function startTrip(){
         "The office refuses a 0 km trip.");
     }
   }
-  if(!validDate($("sDate").value)) problems.push("The date has to be YYYY-MM-DD, e.g. "+todayISO()+".");
+  var date=$("sDate").value||todayISO();
+  if(!validDate(date)) problems.push("The date has to be YYYY-MM-DD, e.g. "+todayISO()+".");
   if(problems.length){ alert(problems.join("\n\n")); return; }
   if(env!==null&&env-kmv>2000&&
      !confirm(fmtKm(env-kmv)+" km in a single trip is unusually long.\n\nSave it anyway?")) return;
 
   S.seq=(S.seq||0)+1;
-  var id=$("sDate").value.replace(/-/g,"")+"-"+String(S.seq);
+  var who=AUTH.signedIn()?AUTH.who():null;
   var t={
-    id:id,
-    date:$("sDate").value,
-    driver:(S.driver||"").trim(),
+    id:date.replace(/-/g,"")+"-"+String(S.seq),
+    date:date,
+    driver:(S.driver||(who&&who.name)||"").trim(),
     vehicle:draft.veh,
     project:draft.proj,
     notes:$("sNotes").value.trim(),
@@ -1287,10 +1137,11 @@ function startTrip(){
   S.vehicle=draft.veh;
   save(true);
 
-  draft.photo=null; draft.endPhoto=null;
-  $("startKm").value=""; $("sEndKm").value=""; $("sNotes").value="";
+  draft.photo=null; draft.endPhoto=null; draft.proj="";
+  $("sProj").value=""; $("startKm").value=""; $("sEndKm").value=""; $("sNotes").value="";
+  $("sDate").value=""; dateOpen=false;
   showShot($("startShot"),null); showShot($("sEndShot"),null);
-  syncStartBtn();
+  syncStartBtn(); drawSuggestions();
   render();
   SYNC.soon();
   window.scrollTo(0,0);
@@ -1392,62 +1243,43 @@ function endTrip(){
   window.scrollTo(0,0);
 }
 
-/* ---------------------------------------------------------------- list */
 function tripKm(t){
   if(t.end_km===null||t.end_km===undefined) return null;
   return t.end_km-t.start_km;
 }
-function drawList(){
-  var host=$("list");
-  if(!S.trips.length){
-    host.innerHTML='<p class="hint">No trips yet.</p>';
-    $("cnt").textContent="0";
-    return;
-  }
-  $("cnt").textContent=S.trips.length+" trip"+(S.trips.length>1?"s":"");
 
-  var byDay={}, days=[];
-  S.trips.forEach(function(t){
-    if(!byDay[t.date]){ byDay[t.date]=[]; days.push(t.date); }
-    byDay[t.date].push(t);
-  });
-  days.sort().reverse();
-
-  var html="";
-  days.forEach(function(d){
-    var tot=byDay[d].reduce(function(a,t){ var k=tripKm(t); return a+(k||0); },0);
-    var opn=byDay[d].filter(function(t){ return tripKm(t)===null; }).length;
-    var lab=(tot?fmtKm(tot)+" km":"")+
-            (opn?(tot?" &middot; ":"")+opn+" open":"");
-    html+='<div class="daylab">'+esc(dayName(d))+'<span class="tot">'+lab+'</span></div>';
-    byDay[d].forEach(function(t){
-      var k=tripKm(t);
-      var cls="trip"+(k===null?" open":"")+(t.sent?" sent":"");
-      html+='<div class="'+cls+'" data-id="'+esc(t.id)+'">'+
-        '<div class="l1"><span class="p">'+esc(t.project||"(no project)")+'</span>'+
-        '<span class="k">'+(k===null?"open":fmtKm(k)+" km")+'</span></div>'+
-        '<div class="l2">'+esc(t.vehicle)+
-          (t.mode==="dist"?" &middot; distance entered":
-            " &middot; "+fmtKm(t.start_km)+(k===null?" &rarr; ?":" &rarr; "+fmtKm(t.end_km)))+
-          (t.notes?"<br>"+esc(t.notes):"")+'</div>'+
-        '<div class="l3">'+
-          (k===null?'<span class="tag open">Open</span>':"")+
-          syncTag(t)+(t.sent?'<span class="tag sent">File sent</span>':"")+
-          (t.hasStartPhoto||t.hasEndPhoto?'<span class="tag">&#128247; '+
-            ((t.hasStartPhoto?1:0)+(t.hasEndPhoto?1:0))+'</span>':"")+
-          '<button class="btn sm" data-act="edit" style="margin-left:auto">Edit</button>'+
-          '<button class="btn sm danger" data-act="del">Delete</button>'+
-        '</div></div>';
-    });
-  });
-  host.innerHTML=html;
-  Array.prototype.forEach.call(host.querySelectorAll("button[data-act]"),function(b){
+/* ---------------------------------------------------------------- waiting + sent
+   The phone shows only what still needs it: closed trips not yet at the office, with the
+   reason, and a short line of what was sent. */
+function drawWaiting(){
+  var signed=AUTH.signedIn();
+  var wait=S.trips.filter(function(t){ return t.end_km!==null&&t.end_km!==undefined; });
+  $("waitBox").classList.toggle("hidden",!wait.length);
+  $("waitList").innerHTML=wait.map(function(t){
+    var why=!HOSTED?"":(!signed?"waiting for you to sign in":(t.syncErr?"Sync failed: "+t.syncErr:
+            (!navigator.onLine?"waiting for signal":"sending&hellip;")));
+    return '<div class="row" data-id="'+esc(t.id)+'"><div class="m">'+esc(dayName(t.date))+' &middot; '+esc(t.project)+
+      '<span class="why'+(t.syncErr&&signed?" bad":"")+'">'+(t.syncErr&&signed?why:why)+'</span></div>'+
+      '<span class="k">'+fmtKm(tripKm(t))+' km</span>'+
+      '<span class="act"><button type="button" data-act="edit">Edit</button>'+
+      '<button type="button" class="danger" data-act="del">Delete</button></span></div>';
+  }).join("");
+  Array.prototype.forEach.call($("waitList").querySelectorAll("button[data-act]"),function(b){
     b.onclick=function(){
       var id=b.parentNode.parentNode.getAttribute("data-id");
       if(b.getAttribute("data-act")==="edit") editTrip(id); else delTrip(id);
     };
   });
 }
+function drawRecent(){
+  var r=(S.recent||[]).slice(0,3);
+  $("recentBox").classList.toggle("hidden",!r.length);
+  $("recent").innerHTML=r.map(function(x){
+    return '<div class="row"><div class="m"><span class="ok-ink">&#10003;</span> '+esc(dayName(x.date))+' &middot; '+
+      esc(x.project)+'</div><span class="k">'+fmtKm(x.km)+' km</span></div>';
+  }).join("");
+}
+
 function findTrip(id){
   for(var i=0;i<S.trips.length;i++) if(S.trips[i].id===id) return S.trips[i];
   return null;
@@ -1528,270 +1360,6 @@ function editTrip(id){
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
 }
 
-/* ---------------------------------------------------------------- send */
-function unsent(){ return S.trips.filter(function(t){ return !t.sent; }); }
-function sendable(list){
-  return list.filter(function(t){ return t.end_km!==null&&t.end_km!==undefined; });
-}
-function drawSend(){
-  var u=unsent(), ready=sendable(u), open=u.length-ready.length;
-  var byProj={}, order=[];
-  ready.forEach(function(t){
-    if(!byProj[t.project]){ byProj[t.project]={km:0,n:0}; order.push(t.project); }
-    byProj[t.project].km+=tripKm(t); byProj[t.project].n++;
-  });
-  var rows=order.sort().map(function(p){
-    return '<tr><td>'+esc(p)+'</td><td class="n">'+byProj[p].n+'</td>'+
-           '<td class="n">'+fmtKm(byProj[p].km)+'</td></tr>';
-  }).join("");
-  var tot=ready.reduce(function(a,t){ return a+tripKm(t); },0);
-  var html;
-  if(!ready.length){
-    html='<p class="hint">Nothing to send'+(open?" - "+open+" open trip"+(open>1?"s":"")+
-      " still need an end odometer.":".")+'</p>';
-  }else{
-    html='<table class="sum"><thead><tr><th>Client / project</th><th class="n">Trips</th>'+
-      '<th class="n">km</th></tr></thead><tbody>'+rows+'</tbody>'+
-      '<tfoot><tr><td>Total</td><td class="n">'+ready.length+'</td>'+
-      '<td class="n">'+fmtKm(tot)+'</td></tr></tfoot></table>';
-    if(open) html+='<p class="hint"><b>'+open+' open trip'+(open>1?"s are":" is")+
-      ' held back</b> - a trip with no end odometer would be billed as 0 km, so it is not sent.</p>';
-  }
-  $("sendSummary").innerHTML=html;
-  $("sendBtn").disabled=!ready.length;
-  $("sendBtn").textContent=ready.length?("Send "+ready.length+" trip"+(ready.length>1?"s":"")):
-    "Nothing to send";
-}
-function batchPayload(list,withPhotos){
-  return {
-    kind:"kei-mileage-batch",
-    version:1,
-    build:BUILD,
-    driver:(S.driver||"").trim(),
-    device:(navigator.userAgent||"").slice(0,160),
-    createdAt:nowISO(),
-    /* trips carry exactly the fields POST /api/mileage accepts, plus provenance
-       the office side keeps but the dashboard ignores. */
-    trips:list.map(function(t){
-      var o={
-        date:t.date,
-        vehicle:t.vehicle,
-        project:t.project,
-        notes:t.notes||"",
-        start_km:t.start_km,
-        end_km:t.end_km,
-        paid_out:false,
-        _id:t.id,
-        _driver:t.driver||(S.driver||"").trim(),
-        _mode:t.mode,
-        _startedAt:t.startedAt||null,
-        _endedAt:t.endedAt||null,
-        _build:t.build||BUILD
-      };
-      if(withPhotos){
-        var a=t.hasStartPhoto?getPhoto(t.id,"start"):null;
-        var b=t.hasEndPhoto?getPhoto(t.id,"end"):null;
-        if(a) o._photoStart=a;
-        if(b) o._photoEnd=b;
-      }
-      return o;
-    })
-  };
-}
-function csvOf(list){
-  var head=["Date","Driver","Vehicle","Project","Notes","Start (km)","End (km)","Dist (km)",
-            "Paid Out","Year-Month","Trip ID","Started","Ended","Entry Mode","App Build"];
-  function q(v){
-    var s=(v===null||v===undefined)?"":String(v);
-    return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
-  }
-  var lines=[head.map(q).join(",")];
-  list.forEach(function(t){
-    lines.push([t.date,t.driver||S.driver||"",t.vehicle,t.project,t.notes||"",
-      t.start_km,t.end_km,tripKm(t),"No",String(t.date).slice(0,7),t.id,
-      t.startedAt||"",t.endedAt||"",t.mode,t.build||BUILD].map(q).join(","));
-  });
-  /* BOM so Excel opens site names with accents correctly. CRLF for the same reason. */
-  return "\uFEFF"+lines.join("\r\n")+"\r\n";
-}
-function recordHTML(payload){
-  var clone=document.documentElement.cloneNode(true);
-  function pick(sel){ return clone.querySelector(sel); }
-  ["#openCard","#startCard","#noStart","#listCard","#sendCard","#setCard","#banners","#dlg",
-   "#installBanner","#updatePill","#syncCard","#syncPill"].forEach(function(s){
-    var el=pick(s); if(el) el.parentNode.removeChild(el);
-  });
-  var rec=pick("#recCard"); if(rec) rec.className="card";
-  var t=pick("title");
-  if(t) t.textContent="KEI Mileage - "+payload.driver+" "+payload.createdAt.slice(0,10);
-  var html="<!doctype html>\n"+clone.outerHTML;
-  var json=JSON.stringify(payload).replace(/<\//g,"<\\/");
-  var re=/var BAKED=[^\n]*?;\/\*BAKEDCFG\*\//;
-  if(!re.test(html)) return null;
-  return html.replace(re,function(){ return "var BAKED="+json+";/*"+"BAKEDCFG"+"*/"; });
-}
-function fileStem(payload){
-  var who=(payload.driver||"Unknown").replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g,"");
-  return payload.createdAt.slice(0,10)+"_Mileage_"+(who||"Unknown");
-}
-function deliver(blob,name,thenOK){
-  if(navigator.canShare){
-    try{
-      var file=new File([blob],name,{type:blob.type});
-      if(navigator.canShare({files:[file]})){
-        navigator.share({files:[file],title:name})
-          .then(function(){ thenOK("Sent"); })
-          .catch(function(){ download(blob,name); thenOK("Saved to device"); });
-        return;
-      }
-    }catch(e){}
-  }
-  download(blob,name);
-  thenOK("Saved to device");
-}
-function download(blob,name){
-  var a=document.createElement("a");
-  var url=URL.createObjectURL(blob);
-  a.href=url; a.download=name;
-  document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(url); },4000);
-}
-function doSend(all){
-  var list=sendable(all?S.trips:unsent());
-  if(!list.length){ alert("There is nothing to send."); return; }
-  var withPhotos=$("incPhotos").checked;
-  var payload=batchPayload(list,withPhotos);
-  var html=recordHTML(payload);
-  if(!html){
-    alert("The file could not be prepared - this page has been altered. Use the CSV backup "+
-          "instead and tell Rory.");
-    return;
-  }
-  var name=fileStem(payload)+".html";
-  var blob=new Blob([html],{type:"text/html"});
-  var ids={};
-  list.forEach(function(t){ ids[t.id]=1; });
-  deliver(blob,name,function(how){
-    var stamp=nowISO();
-    S.trips.forEach(function(t){
-      if(ids[t.id]){ t.sent=true; t.sentAt=stamp; }
-    });
-    save(true);
-    pill(how,"ok");
-    banner("ok",how+" - "+list.length+" trip"+(list.length>1?"s":""),
-      "Put <b>"+esc(name)+"</b> into OneDrive &rsaquo; KEI Shared &rsaquo; _Shared Files to Sort "+
-      "(Keep this folder Clean) &mdash; same place as the field sheets. Photos stay on this "+
-      "phone until you tap <b>Delete sent trips</b>.");
-    render();
-  });
-}
-function doCSV(){
-  var list=S.trips.slice();
-  if(!list.length){ alert("There are no trips to export."); return; }
-  var name=todayISO()+"_Mileage_"+((S.driver||"Unknown").replace(/\s+/g,""))+".csv";
-  deliver(new Blob([csvOf(list)],{type:"text/csv;charset=utf-8"}),name,function(how){
-    pill("CSV "+how.toLowerCase(),"ok");
-  });
-}
-
-/* ---------------------------------------------------------------- housekeeping */
-/* What is safe to clear off the phone: once sync is in use, ONLY trips the
-   office has confirmed at their latest edit. A file-sent trip that never synced
-   is not in the tracker, so it stays. Before anyone has signed in, the old rule
-   (sent as a file) still applies. */
-function clearable(t){
-  if(AUTH.signedIn()||S.everSynced||S.everSignedIn) return (t.syncRev||0)>0&&!SYNC.needs(t)&&t.end_km!==null&&t.end_km!==undefined;
-  return !!t.sent;
-}
-function purgeSent(){
-  var done=S.trips.filter(clearable);
-  if(!done.length){ alert("There are no synced trips to clear."); return; }
-  if(!confirm("Clear "+done.length+" synced trip"+(done.length>1?"s":"")+
-      (done.length>1?" and their photos":" and its photos")+" off this phone?"+
-      "\n\nThe office already has "+(done.length>1?"them":"it")+" - this only frees space here.")) return;
-  done.forEach(function(t){ dropPhoto(t.id,"start"); dropPhoto(t.id,"end"); });
-  var gone={}; done.forEach(function(t){ gone[t.id]=1; });
-  S.trips=S.trips.filter(function(t){ return !gone[t.id]; });
-  save(true); render();
-}
-function wipe(){
-  /* Pending deletes (tombstones) are KEPT through an erase - they still go to the
-     office - so they are not counted as "lost" (review, 2026-11-12). */
-  var syncing=AUTH.signedIn()||S.everSynced||S.everSignedIn;
-  var u=syncing?S.trips.filter(SYNC.needs).length:sendable(unsent()).length;
-  var nt=(S.tombs||[]).length;
-  if(!confirm("Erase every trip and photo on this phone?"+
-      (u?"\n\n"+u+" trip"+(u>1?"s have":" has")+" NOT reached the office and will be lost.":"")+
-      (nt?"\n\n"+nt+" deletion"+(nt>1?"s":"")+" waiting to reach the office will still be sent.":"")+
-      "\n\nThis cannot be undone.")) return;
-  if(u&&!confirm("Really erase "+u+" unsent trip"+(u>1?"s":"")+"?")) return;
-  try{
-    var kill=[];
-    for(var i=0;i<localStorage.length;i++){
-      var k=localStorage.key(i);
-      if(k&&k.indexOf("kei-mileage")===0) kill.push(k);
-    }
-    kill.forEach(function(k){ localStorage.removeItem(k); });
-  }catch(e){}
-  var keep={deviceId:S.deviceId, tombs:S.tombs||[], everSignedIn:S.everSignedIn, everSynced:S.everSynced,
-            deviceSpId:S.deviceSpId};   /* same phone, same office row; pending deletes still go */
-  S=blank(); Object.keys(keep).forEach(function(k){ if(keep[k]!==undefined) S[k]=keep[k]; });
-  save(true); extraBanners=[]; render(); SYNC.soon();
-}
-function drawStorage(){
-  var n=storageUsed();
-  var photos=S.trips.reduce(function(a,t){ return a+(t.hasStartPhoto?1:0)+(t.hasEndPhoto?1:0); },0);
-  $("storeHint").innerHTML=
-    (n===null?"Storage use could not be measured.":
-      "Using <b>"+Math.round(n/1024)+" KB</b> on this phone across "+S.trips.length+
-      " trip"+(S.trips.length===1?"":"s")+" and "+photos+" photo"+(photos===1?"":"s")+".")+
-    " A phone typically allows about 5 MB, so clear synced trips now and then."+
-    " App build "+BUILD+".";
-}
-
-/* ---------------------------------------------------------------- record view */
-function drawRecord(){
-  /* recordHTML() strips these cards out, so a re-opened batch file has none of them. */
-  ["openCard","startCard","noStart","listCard","sendCard","setCard",
-   "installBanner","updatePill","syncCard","syncPill"].forEach(function(id){
-    var el=$(id); if(el) el.className="hidden";
-  });
-  $("recCard").className="card";
-  var p=BAKED;
-  var tot=p.trips.reduce(function(a,t){ return a+(t.end_km-t.start_km); },0);
-  $("recMeta").innerHTML=
-    '<div style="font-size:17px;font-weight:800">'+esc(p.driver||"(no driver set)")+'</div>'+
-    '<div class="hint" style="margin-top:4px">'+p.trips.length+' trip'+
-      (p.trips.length===1?"":"s")+' &middot; '+fmtKm(tot)+' km &middot; sent '+
-      esc(p.createdAt.slice(0,16).replace("T"," "))+' &middot; app build '+esc(p.build)+'</div>';
-  var rows=p.trips.map(function(t){
-    return '<tr><td class="n">'+esc(t.date)+'</td><td>'+esc(t.project)+'</td>'+
-      '<td>'+esc(t.vehicle)+'</td><td>'+esc(t.notes||"")+'</td>'+
-      '<td class="n">'+fmtKm(t.start_km)+'</td><td class="n">'+fmtKm(t.end_km)+'</td>'+
-      '<td class="n">'+fmtKm(t.end_km-t.start_km)+'</td></tr>';
-  }).join("");
-  $("recTable").innerHTML=
-    '<thead><tr><th class="n">Date</th><th>Project</th><th>Vehicle</th><th>Notes</th>'+
-    '<th class="n">Start</th><th class="n">End</th><th class="n">km</th></tr></thead>'+
-    '<tbody>'+rows+'</tbody>'+
-    '<tfoot><tr><td colspan="6">Total</td><td class="n">'+fmtKm(tot)+'</td></tr></tfoot>';
-  var shots="";
-  p.trips.forEach(function(t){
-    [["_photoStart","start"],["_photoEnd","end"]].forEach(function(pair){
-      if(!t[pair[0]]) return;
-      /* A distance entry has no start reading - the photo is of a trip meter showing
-         the whole trip, so labelling it "start - 0 km" would be nonsense. */
-      var cap=(t._mode==="dist")
-        ? "trip meter &middot; "+fmtKm(t.end_km-t.start_km)+" km"
-        : pair[1]+" &middot; "+fmtKm(pair[1]==="start"?t.start_km:t.end_km)+" km";
-      shots+='<figure><img alt="Odometer" src="'+t[pair[0]]+'">'+
-        '<figcaption>'+esc(t.date)+' &middot; '+esc(t.project)+'<br>'+cap+'</figcaption></figure>';
-    });
-  });
-  $("recShots").innerHTML=shots||'<p class="hint">No odometer photos in this batch.</p>';
-  pill("Record","ok");
-}
-
 /* ---------- installable app layer ----------
    Copied from the Field Sheet app (build 13). Only on the hosted origin (or
    localhost while testing). A sent batch opened as a record, and a copy opened
@@ -1862,43 +1430,55 @@ function setupApp(){
 function render(){
   drawBanners();
   drawOpen();
-  drawProjects();
   drawVehicles();
   drawLastKm();
-  drawList();
-  drawSend();
-  drawStorage();
+  drawDate();
+  drawWaiting();
+  drawRecent();
   drawSync();
 }
 function startSignIn(){
   var half=draft.proj&&($("startKm").value||$("sNotes").value);
-  if(half&&!confirm("Signing in leaves this page for a moment, and the half-filled trip form will be cleared.\n\nSign in now?")) return;
+  if(half&&!confirm("Signing in leaves this page for a moment, and the half-filled trip will be cleared.\n\nSign in now?")) return;
   save(true);
   AUTH.signIn();
 }
+function photoInput(btnId,inputId,shotId,label,set){
+  $(btnId).onclick=function(){ $(inputId).click(); };
+  $(inputId).onchange=function(){
+    var f=this.files&&this.files[0]; this.value="";
+    if(!f) return;
+    shrink(f,function(d){
+      set(d);
+      showShot($(shotId),d,label,function(){ set(null); showShot($(shotId),null); });
+    });
+  };
+}
 function init(){
   $("buildBadge").textContent="build "+BUILD;
-
-  if(RECORD){ drawRecord(); return; }
-
   probeStorage();
   S=load();
   if(NEEDS_SAVE){ NEEDS_SAVE=false; save(true); }   /* ids invented by load() are fixed for good, now */
+  if(!S.lastKm) S.lastKm={};
+  if(!Array.isArray(S.recent)) S.recent=[];
+  retireSynced(); save(true);
   /* The installed app and a browser tab share this phone's storage but each keeps its
-     own copy in memory. When the other one saves, take its copy - otherwise this one
-     would later write an old copy back over newer trips (review, 2026-11-12). */
+     own copy in memory. When the other one saves, take its copy (review, 2026-11-12). */
   window.addEventListener("storage",function(e){
-    if(e.key!==STORE||RECORD) return;
+    if(e.key!==STORE) return;
     S=load(); NEEDS_SAVE=false;
     render(); SYNC.soon();
   });
   draft.veh=S.vehicle||"";
-  vehOpen=!draft.veh;
-  $("driver").value=S.driver||"";
-  $("sDate").value=todayISO();
 
-  $("oldToggle").onclick=function(){ showOld=!showOld; drawProjects(); };
+  $("sProj").oninput=function(){ if($("sProj").value!==draft.proj) draft.proj=""; drawSuggestions(); };
+  $("sProj").onkeydown=function(e){
+    if(e.key==="Enter"){ var m=matches($("sProj").value); if(m.length){ e.preventDefault(); pickProject(m[0].p); } }
+  };
+  $("sProj").onblur=function(){ setTimeout(function(){ if(!draft.proj) $("projList").classList.add("hidden"); },150); };
+  $("sProj").onfocus=function(){ drawSuggestions(); };
   $("sEndKm").oninput=syncStartBtn;
+  $("sDate").oninput=function(){ if(validDate($("sDate").value)) drawDate(); };
   $("startBtn").onclick=startTrip;
   $("endBtn").onclick=endTrip;
   $("endKm").oninput=drawOpenDist;
@@ -1908,55 +1488,9 @@ function init(){
   };
   $("editOpenBtn").onclick=function(){ var t=openTrip(); if(t) editTrip(t.id); };
   $("binOpenBtn").onclick=function(){ var t=openTrip(); if(t) delTrip(t.id); };
-  $("sendBtn").onclick=function(){ doSend(false); };
-  $("sendAllBtn").onclick=function(){
-    if(confirm("Send every trip on this phone again, including ones already sent?\n\n"+
-       "The office side ignores a trip it already has, so this is safe.")) doSend(true);
-  };
-  $("csvBtn").onclick=doCSV;
-  $("purgeBtn").onclick=purgeSent;
-  $("wipeBtn").onclick=wipe;
-  $("driver").oninput=function(){ S.driver=$("driver").value; save(); drawBanners(); };
-
-  $("startCamBtn").onclick=function(){ $("startCam").click(); };
-  $("startCam").onchange=function(){
-    var f=this.files&&this.files[0]; this.value="";
-    if(!f) return;
-    pill("Reading photo...","dirty");
-    shrink(f,function(d){
-      draft.photo=d;
-      showShot($("startShot"),d,"Start odometer",function(){
-        draft.photo=null; showShot($("startShot"),null);
-      });
-      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
-    });
-  };
-  $("sEndCamBtn").onclick=function(){ $("sEndCam").click(); };
-  $("sEndCam").onchange=function(){
-    var f=this.files&&this.files[0]; this.value="";
-    if(!f) return;
-    pill("Reading photo...","dirty");
-    shrink(f,function(d){
-      draft.endPhoto=d;
-      showShot($("sEndShot"),d,"End odometer",function(){
-        draft.endPhoto=null; showShot($("sEndShot"),null);
-      });
-      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
-    });
-  };
-  $("endCamBtn").onclick=function(){ $("endCam").click(); };
-  $("endCam").onchange=function(){
-    var f=this.files&&this.files[0]; this.value="";
-    if(!f) return;
-    pill("Reading photo...","dirty");
-    shrink(f,function(d){
-      endPhoto=d;
-      showShot($("endShot"),d,"End odometer",function(){
-        endPhoto=null; showShot($("endShot"),null);
-      });
-      pill(d?"Photo ready":"Photo failed",d?"ok":"bad");
-    });
-  };
+  photoInput("startCamBtn","startCam","startShot","Start odometer",function(d){ draft.photo=d; });
+  photoInput("sEndCamBtn","sEndCam","sEndShot","End odometer",function(d){ draft.endPhoto=d; });
+  photoInput("endCamBtn","endCam","endShot","End odometer",function(d){ endPhoto=d; });
 
   syncStartBtn();
   render();
@@ -1972,7 +1506,7 @@ function init(){
   };
   if(HOSTED&&window.crypto&&crypto.subtle){
     AUTH.start().then(function(fresh){
-      if(fresh&&!(S.driver||"").trim()&&fresh.name){ S.driver=fresh.name; $("driver").value=fresh.name; save(true); }
+      if(fresh&&!(S.driver||"").trim()&&fresh.name){ S.driver=fresh.name; save(true); }
     },function(e){
       banner("bad","Microsoft sign-in did not finish",esc(e.message||String(e)));
     }).then(function(){ render(); SYNC.run("boot"); });
