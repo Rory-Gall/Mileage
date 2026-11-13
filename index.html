@@ -51,8 +51,9 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
 .pair>div{flex:1 1 0;min-width:0}
 .with{display:flex;gap:6px;margin-top:3px}
 .with input{margin-top:0}
-.cam{flex:0 0 auto;width:46px;font-size:19px;border:1px solid var(--line);background:var(--paper);color:var(--ink);
-  border-radius:6px;cursor:pointer;padding:0}
+.uselast{display:block;width:100%;margin-top:16px;padding:12px;text-align:left;font:600 15px var(--sans);
+  color:var(--accent);background:var(--paper);border:1px solid var(--accent);border-radius:8px;cursor:pointer}
+.uselast span{display:block;font-weight:400;font-size:13px;color:var(--ink-2);margin-top:1px}
 .hint{margin:4px 0 0;color:var(--ink-2);font-size:13px}
 .hint a,.links button,a.lk{color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:0;font:inherit;padding:0}
 /* client type-ahead: nothing shows until you type */
@@ -153,11 +154,7 @@ dialog label{margin-top:0}
   <label for="oNotes">Where you went</label>
   <textarea id="oNotes" rows="2"></textarea>
   <label for="endKm">End odometer (km)</label>
-  <div class="with">
-    <input type="text" id="endKm" class="odo" inputmode="decimal" placeholder="000000" autocomplete="off">
-    <button class="cam" id="endCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
-  </div>
-  <input type="file" id="endCam" accept="image/*" class="hidden">
+  <input type="text" id="endKm" class="odo" inputmode="decimal" autocomplete="off">
   <div class="shot hidden" id="endShot"></div>
   <div class="dist" id="oDist"><span class="v">&mdash;</span><span class="u">km</span></div>
   <p class="hint" id="oDistHint"></p>
@@ -182,27 +179,20 @@ dialog label{margin-top:0}
   <label for="sNotes">Where</label>
   <textarea id="sNotes" rows="1" placeholder="e.g. Selous and Anderson"></textarea>
 
+  <!-- build 7: the last reading is a real button, above the start box (Rory: "a little bit bigger") -->
+  <button class="uselast hidden" id="useLastBtn" type="button"></button>
   <div class="pair">
     <div>
       <label for="startKm">Start km</label>
-      <div class="with">
-        <input type="text" id="startKm" class="odo" inputmode="decimal" placeholder="000000" autocomplete="off">
-        <button class="cam" id="startCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
-      </div>
+      <input type="text" id="startKm" class="odo" inputmode="decimal" autocomplete="off">
     </div>
     <div>
       <label for="sEndKm">End km</label>
-      <div class="with">
-        <input type="text" id="sEndKm" class="odo" inputmode="decimal" placeholder="later" autocomplete="off">
-        <button class="cam" id="sEndCamBtn" type="button" title="Photo of the odometer">&#128247;</button>
-      </div>
+      <input type="text" id="sEndKm" class="odo" inputmode="decimal" placeholder="later" autocomplete="off">
     </div>
   </div>
-  <input type="file" id="startCam" accept="image/*" class="hidden">
-  <input type="file" id="sEndCam" accept="image/*" class="hidden">
   <div class="shot hidden" id="startShot"></div>
   <div class="shot hidden" id="sEndShot"></div>
-  <p class="hint" id="lastKmHint"></p>
 
   <p class="hint" id="dateLine"></p>
   <input type="text" id="sDate" class="hidden" inputmode="numeric" placeholder="yyyy-mm-dd" maxlength="10" autocomplete="off">
@@ -244,7 +234,7 @@ dialog label{margin-top:0}
 <script>
 "use strict";
 /* Build 6. Bump BUILD and sw.js's CACHE together on every release (deploy.ps1 refuses otherwise). */
-var BUILD="6";
+var BUILD="7";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -1059,12 +1049,35 @@ function lastReading(veh){
   return best;
 }
 function drawLastKm(){
-  var hint=$("lastKmHint"), last=draft.veh?lastReading(draft.veh):null;
-  if(!last){ hint.innerHTML=""; return; }
-  hint.innerHTML='Last reading for the '+esc(draft.veh)+': '+fmtKm(last.km)+' km ('+esc(dayName(last.date))+
-    ') &middot; <a id="useLast">use it</a>';
-  $("useLast").onclick=function(){ $("startKm").value=String(last.km); };
+  var b=$("useLastBtn"), last=draft.veh?lastReading(draft.veh):null;
+  if(!last){ b.classList.add("hidden"); b.innerHTML=""; return; }
+  b.innerHTML='Use last reading: '+fmtKm(last.km)+' km<span>'+esc(draft.veh)+' &middot; '+esc(dayName(last.date))+
+    ' &mdash; read the dash if it has been driven since</span>';
+  b.classList.remove("hidden");
+  b.onclick=function(){ $("startKm").value=String(last.km); groupDigits($("startKm")); $("sEndKm").focus(); };
 }
+
+/* Thousands commas AS YOU TYPE (Rory, build 7): 276296 shows as 276,296. Only digits and one decimal
+   point are kept; the caret stays after the same digit it was after. num() already ignores commas,
+   so what is stored and synced is the plain number. */
+function groupDigits(el){
+  var v=el.value, caret=el.selectionStart==null?v.length:el.selectionStart;
+  var before=v.slice(0,caret).replace(/[^0-9.]/g,"").length;
+  var clean=v.replace(/[^0-9.]/g,"");
+  var dot=clean.indexOf(".");
+  if(dot>=0) clean=clean.slice(0,dot+1)+clean.slice(dot+1).replace(/\./g,"");
+  var parts=clean.split("."), whole=parts[0].replace(/^0+(?=\d)/,"");
+  var out=whole.replace(/\B(?=(\d{3})+(?!\d))/g,",")+(parts.length>1?"."+parts[1]:"");
+  if(out===v) return;
+  el.value=out;
+  var seen=0, pos=0;
+  while(pos<out.length&&seen<before){ if(/[0-9.]/.test(out[pos])) seen++; pos++; }
+  try{ if(document.activeElement===el) el.setSelectionRange(pos,pos); }catch(e){}
+}
+document.addEventListener("input",function(e){
+  var id=e.target&&e.target.id;
+  if(id==="startKm"||id==="sEndKm"||id==="endKm"||id==="eStart"||id==="eEnd") groupDigits(e.target);
+},true);
 function drawDate(){
   var d=$("sDate").value||todayISO();
   var today=(d===todayISO());
@@ -1176,7 +1189,7 @@ function drawOpen(){
       (t.driver?' &middot; '+esc(t.driver):'')+' &middot; '+dayName(t.date)+
       (started?' &middot; started '+started:'')+'</div>'+
     '<div class="hint" style="margin-top:6px">Start odometer <b>'+fmtKm(t.start_km)+' km</b>'+
-      (t.hasStartPhoto?' &middot; photo on file':' &middot; no photo')+'</div>';
+      '</div>';
 
   $("oNotes").value=t.notes||"";
   var ep=getPhoto(t.id,"end");
@@ -1325,6 +1338,7 @@ function editTrip(id){
         esc(t.end_km===null||t.end_km===undefined?"":t.end_km)+'"></div></div>'+
     '<p class="hint">Leave the end blank to put the trip back in progress. Clearing a reading '+
       'never saves it as zero.</p>';
+  ["eStart","eEnd"].forEach(function(id){ var el=$(id); if(el) groupDigits(el); });
   dlg.returnValue="";
   $("dlgOk").onclick=function(){
     var st=num($("eStart").value), en=num($("eEnd").value);
@@ -1443,17 +1457,6 @@ function startSignIn(){
   save(true);
   AUTH.signIn();
 }
-function photoInput(btnId,inputId,shotId,label,set){
-  $(btnId).onclick=function(){ $(inputId).click(); };
-  $(inputId).onchange=function(){
-    var f=this.files&&this.files[0]; this.value="";
-    if(!f) return;
-    shrink(f,function(d){
-      set(d);
-      showShot($(shotId),d,label,function(){ set(null); showShot($(shotId),null); });
-    });
-  };
-}
 function init(){
   $("buildBadge").textContent="build "+BUILD;
   probeStorage();
@@ -1488,9 +1491,8 @@ function init(){
   };
   $("editOpenBtn").onclick=function(){ var t=openTrip(); if(t) editTrip(t.id); };
   $("binOpenBtn").onclick=function(){ var t=openTrip(); if(t) delTrip(t.id); };
-  photoInput("startCamBtn","startCam","startShot","Start odometer",function(d){ draft.photo=d; });
-  photoInput("sEndCamBtn","sEndCam","sEndShot","End odometer",function(d){ draft.endPhoto=d; });
-  photoInput("endCamBtn","endCam","endShot","End odometer",function(d){ endPhoto=d; });
+  /* build 7: no odometer photos (Rory). The sync engine still carries a photo if one exists on an older
+     trip, so nothing already on a phone is lost. */
 
   syncStartBtn();
   render();
