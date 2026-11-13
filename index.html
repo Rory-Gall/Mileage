@@ -51,9 +51,10 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-
 .pair>div{flex:1 1 0;min-width:0}
 .with{display:flex;gap:6px;margin-top:3px}
 .with input{margin-top:0}
-.uselast{display:block;width:100%;margin-top:16px;padding:12px;text-align:left;font:600 15px var(--sans);
-  color:var(--accent);background:var(--paper);border:1px solid var(--accent);border-radius:8px;cursor:pointer}
-.uselast span{display:block;font-weight:400;font-size:13px;color:var(--ink-2);margin-top:1px}
+/* build 8: compact - one line, but the km stay visible so the dash can be cross-checked */
+.uselast{display:inline-block;margin-top:14px;padding:6px 12px;font:600 14px var(--sans);
+  color:var(--accent);background:var(--paper);border:1px solid var(--accent);border-radius:999px;cursor:pointer}
+.uselast span{font-weight:400;color:var(--ink-2)}
 .hint{margin:4px 0 0;color:var(--ink-2);font-size:13px}
 .hint a,.links button,a.lk{color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:0;font:inherit;padding:0}
 /* client type-ahead: nothing shows until you type */
@@ -234,7 +235,7 @@ dialog label{margin-top:0}
 <script>
 "use strict";
 /* Build 6. Bump BUILD and sw.js's CACHE together on every release (deploy.ps1 refuses otherwise). */
-var BUILD="7";
+var BUILD="8";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -1051,8 +1052,7 @@ function lastReading(veh){
 function drawLastKm(){
   var b=$("useLastBtn"), last=draft.veh?lastReading(draft.veh):null;
   if(!last){ b.classList.add("hidden"); b.innerHTML=""; return; }
-  b.innerHTML='Use last reading: '+fmtKm(last.km)+' km<span>'+esc(draft.veh)+' &middot; '+esc(dayName(last.date))+
-    ' &mdash; read the dash if it has been driven since</span>';
+  b.innerHTML='Use last: '+fmtKm(last.km)+' km <span>&middot; '+esc(dayName(last.date))+'</span>';
   b.classList.remove("hidden");
   b.onclick=function(){ $("startKm").value=String(last.km); groupDigits($("startKm")); $("sEndKm").focus(); };
 }
