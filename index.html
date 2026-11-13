@@ -235,7 +235,7 @@ dialog label{margin-top:0}
 <script>
 "use strict";
 /* Build 6. Bump BUILD and sw.js's CACHE together on every release (deploy.ps1 refuses otherwise). */
-var BUILD="8";
+var BUILD="9";
 
 /* ------------------------------------------------------------------ projects
    These are the EXACT project strings from
@@ -1052,7 +1052,7 @@ function lastReading(veh){
 function drawLastKm(){
   var b=$("useLastBtn"), last=draft.veh?lastReading(draft.veh):null;
   if(!last){ b.classList.add("hidden"); b.innerHTML=""; return; }
-  b.innerHTML='Use last: '+fmtKm(last.km)+' km <span>&middot; '+esc(dayName(last.date))+'</span>';
+  b.innerHTML='Use last: '+fmtKm(last.km)+' km';   /* build 9: no date (Rory - the dash says it) */
   b.classList.remove("hidden");
   b.onclick=function(){ $("startKm").value=String(last.km); groupDigits($("startKm")); $("sEndKm").focus(); };
 }
